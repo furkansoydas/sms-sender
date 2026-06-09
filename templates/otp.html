@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block title %}OTP Doğrulama{% endblock %}
+{% block content %}
+<div class="auth-card">
+    <h1>OTP Doğrulama</h1>
+    <p class="subtitle">Telefonunuza gönderilen 6 haneli kodu girin</p>
+    <form method="POST">
+        <div class="form-group">
+            <label>Doğrulama Kodu</label>
+            <input type="text" name="otp" class="otp-input" maxlength="6" placeholder="000000" required autofocus autocomplete="one-time-code">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Doğrula</button>
+    </form>
+    <div class="alt-link">
+        <a href="{{ url_for('login_page') }}">Geri dön</a>
+    </div>
+</div>
+{% endblock %}

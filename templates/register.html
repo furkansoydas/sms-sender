@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Kayıt - SMS Sender{% endblock %}
+{% block content %}
+<div class="auth-card">
+    <h1>Kayıt Ol</h1>
+    <p class="subtitle">OTP doğrulaması için telefon numaranız gerekli</p>
+    <form method="POST">
+        <div class="form-group">
+            <label>Kullanıcı Adı</label>
+            <input type="text" name="username" placeholder="kullanici_adi" required autofocus>
+        </div>
+        <div class="form-group">
+            <label>Şifre</label>
+            <input type="password" name="password" placeholder="••••••••" required>
+        </div>
+        <div class="form-group">
+            <label>Telefon (OTP için)</label>
+            <input type="text" name="phone" placeholder="5XXXXXXXXX" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width:100%">Kayıt Ol</button>
+    </form>
+    <div class="alt-link">
+        Hesabınız var mı? <a href="{{ url_for('login_page') }}">Giriş yap</a>
+    </div>
+</div>
+{% endblock %}

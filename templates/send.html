@@ -1,0 +1,34 @@
+{% extends "base.html" %}
+{% block title %}SMS Gönder{% endblock %}
+{% block content %}
+
+<h1 style="font-size:1.5rem; margin-bottom:1.5rem;">SMS Gönder</h1>
+
+<div class="blacklist-banner">
+    <h3>Kara listedeki kişilere SMS gönderilmez</h3>
+    <p>Excel'de kırmızı işaretli kişiler otomatik olarak gönderim listesinden çıkarılmıştır. Aşağıda sadece izin verilen kişiler yer alır.</p>
+</div>
+
+<div class="card">
+    <h2>Yeni SMS Gönderimi</h2>
+    <form method="POST">
+        <div class="form-group">
+            <label>Hedef Sheet</label>
+            <select name="sheet">
+                <option value="all">Tümü ({{ sendable_count }} kişi)</option>
+                {% for s in sheets %}
+                <option value="{{ s }}">{{ s }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="form-group">
+            <label>SMS Mesajı</label>
+            <textarea name="message" placeholder="Mesajınızı buraya yazın..." required></textarea>
+            <p style="color:#64748b; font-size:0.75rem; margin-top:0.5rem;">Türkçe karakter kullanırsanız SMS uzunluğu 70 karaktere düşer. Uzun mesajlar birden fazla SMS olarak ücretlendirilir.</p>
+        </div>
+        <input type="hidden" name="confirmed" value="false">
+        <button type="submit" class="btn btn-primary">Önizleme</button>
+    </form>
+</div>
+
+{% endblock %}

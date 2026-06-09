@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}Dashboard - SMS Sender{% endblock %}
+{% block content %}
+
+<h1 style="font-size:1.5rem; margin-bottom:1.5rem;">Dashboard</h1>
+
+<div class="stats-grid">
+    <div class="stat-card blue">
+        <div class="number">{{ total }}</div>
+        <div class="label">Toplam Kayıt</div>
+    </div>
+    <div class="stat-card green">
+        <div class="number">{{ sendable }}</div>
+        <div class="label">Gönderilebilir</div>
+    </div>
+    <div class="stat-card purple">
+        <div class="number">{{ unique_phones }}</div>
+        <div class="label">Benzersiz Numara</div>
+    </div>
+    <div class="stat-card red">
+        <div class="number">{{ blacklisted_count }}</div>
+        <div class="label">Kara Liste</div>
+    </div>
+    <div class="stat-card yellow">
+        <div class="number">{{ invalid }}</div>
+        <div class="label">Geçersiz Numara</div>
+    </div>
+</div>
+
+{% if blacklisted_count > 0 %}
+<div class="blacklist-banner">
+    <h3>Kara Liste Koruması Aktif</h3>
+    <p>Excel'de kırmızı işaretlenmiş <strong>{{ blacklisted_count }} kişi</strong> SMS almak istemiyor. Bu kişilere SMS gönderimi otomatik olarak engelleniyor. Yanlışlıkla bile bu kişilere mesaj atamazsınız.</p>
+</div>
+{% endif %}
+
+<div class="card">
+    <h2>Sheet Dağılımı</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Sheet</th>
+                <th>Gönderilebilir</th>
+                <th>İşlem</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for sheet, count in sheets.items() %}
+            <tr>
+                <td><strong>{{ sheet }}</strong></td>
+                <td>{{ count }} kişi</td>
+                <td>
+                    <a href="{{ url_for('contacts_page', sheet=sheet) }}" class="btn btn-ghost" style="padding:0.3rem 0.8rem; font-size:0.8rem;">Görüntüle</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+
+{% if blacklisted %}
+<div class="card">
+    <h2 style="color:#f87171;">Kara Liste (SMS İstemeyen)</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Firma</th>
+                <th>Telefon</th>
+                <th>Sheet</th>
+                <th>Durum</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in blacklisted %}
+            <tr class="blacklisted">
+                <td>{{ c.firma }}</td>
+                <td>{{ c.telefon }}</td>
+                <td>{{ c.sheet }}</td>
+                <td><span class="badge badge-red">ENGEL</span></td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+
+{% endblock %}

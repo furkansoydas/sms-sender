@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}SMS Sender{% endblock %}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+            background: #0f172a;
+            color: #e2e8f0;
+            min-height: 100vh;
+        }
+        nav {
+            background: #1e293b;
+            border-bottom: 1px solid #334155;
+            padding: 0 2rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 60px;
+        }
+        nav .logo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        nav .nav-links { display: flex; gap: 0.5rem; align-items: center; }
+        nav a {
+            color: #94a3b8;
+            text-decoration: none;
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+        nav a:hover { color: #e2e8f0; background: #334155; }
+        nav a.active { color: #38bdf8; background: rgba(56,189,248,0.1); }
+        nav .user-badge {
+            background: #334155;
+            color: #94a3b8;
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+        }
+        .container { max-width: 1200px; margin: 0 auto; padding: 2rem; }
+        .flash {
+            padding: 1rem 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .flash.error { background: rgba(239,68,68,0.15); color: #fca5a5; border: 1px solid rgba(239,68,68,0.3); }
+        .flash.success { background: rgba(34,197,94,0.15); color: #86efac; border: 1px solid rgba(34,197,94,0.3); }
+        .flash.warning { background: rgba(234,179,8,0.15); color: #fde047; border: 1px solid rgba(234,179,8,0.3); }
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .card h2 { font-size: 1.1rem; color: #f1f5f9; margin-bottom: 1rem; }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .stat-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 1.5rem;
+            text-align: center;
+        }
+        .stat-card .number { font-size: 2.2rem; font-weight: 700; }
+        .stat-card .label { font-size: 0.8rem; color: #94a3b8; margin-top: 0.3rem; }
+        .stat-card.green .number { color: #4ade80; }
+        .stat-card.red .number { color: #f87171; }
+        .stat-card.blue .number { color: #38bdf8; }
+        .stat-card.yellow .number { color: #facc15; }
+        .stat-card.purple .number { color: #a78bfa; }
+        input, select, textarea {
+            width: 100%;
+            padding: 0.75rem 1rem;
+            background: #0f172a;
+            border: 1px solid #334155;
+            border-radius: 10px;
+            color: #e2e8f0;
+            font-size: 0.95rem;
+            outline: none;
+            transition: border 0.2s;
+        }
+        input:focus, select:focus, textarea:focus { border-color: #38bdf8; }
+        textarea { min-height: 120px; resize: vertical; font-family: inherit; }
+        label { display: block; margin-bottom: 0.5rem; font-size: 0.85rem; color: #94a3b8; font-weight: 500; }
+        .form-group { margin-bottom: 1.25rem; }
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.75rem 1.5rem;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            color: #fff;
+        }
+        .btn-primary { background: #2563eb; }
+        .btn-primary:hover { background: #1d4ed8; }
+        .btn-danger { background: #dc2626; }
+        .btn-danger:hover { background: #b91c1c; }
+        .btn-success { background: #16a34a; }
+        .btn-success:hover { background: #15803d; }
+        .btn-ghost { background: transparent; border: 1px solid #334155; color: #94a3b8; }
+        .btn-ghost:hover { background: #334155; color: #e2e8f0; }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 0.85rem;
+        }
+        th { text-align: left; padding: 0.75rem 1rem; color: #64748b; font-weight: 600; border-bottom: 1px solid #334155; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; }
+        td { padding: 0.75rem 1rem; border-bottom: 1px solid #1e293b; }
+        tr:hover td { background: rgba(56,189,248,0.03); }
+        tr.blacklisted td { background: rgba(239,68,68,0.08); color: #fca5a5; }
+        .badge {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+        .badge-red { background: rgba(239,68,68,0.2); color: #fca5a5; }
+        .badge-green { background: rgba(34,197,94,0.2); color: #86efac; }
+        .badge-blue { background: rgba(56,189,248,0.2); color: #7dd3fc; }
+        .auth-wrapper {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            padding: 2rem;
+        }
+        .auth-card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 20px;
+            padding: 2.5rem;
+            width: 100%;
+            max-width: 420px;
+        }
+        .auth-card h1 {
+            text-align: center;
+            font-size: 1.5rem;
+            margin-bottom: 0.5rem;
+            color: #f1f5f9;
+        }
+        .auth-card .subtitle {
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+        .auth-card .alt-link {
+            text-align: center;
+            margin-top: 1.5rem;
+            font-size: 0.85rem;
+            color: #64748b;
+        }
+        .auth-card .alt-link a { color: #38bdf8; text-decoration: none; }
+        .blacklist-banner {
+            background: rgba(239,68,68,0.1);
+            border: 1px solid rgba(239,68,68,0.3);
+            border-radius: 12px;
+            padding: 1.25rem 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+        .blacklist-banner h3 { color: #f87171; font-size: 0.95rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+        .blacklist-banner p { color: #fca5a5; font-size: 0.8rem; line-height: 1.5; }
+        .filter-bar { display: flex; gap: 0.5rem; margin-bottom: 1.5rem; flex-wrap: wrap; }
+        .filter-btn {
+            padding: 0.4rem 1rem;
+            border-radius: 20px;
+            border: 1px solid #334155;
+            background: transparent;
+            color: #94a3b8;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+        }
+        .filter-btn:hover, .filter-btn.active { background: #38bdf8; color: #0f172a; border-color: #38bdf8; }
+        .filter-btn.active-red { background: #ef4444; color: #fff; border-color: #ef4444; }
+        .otp-input {
+            text-align: center;
+            font-size: 2rem;
+            letter-spacing: 0.5rem;
+            font-weight: 700;
+        }
+        @media (max-width: 768px) {
+            .container { padding: 1rem; }
+            .stats-grid { grid-template-columns: repeat(2, 1fr); }
+            nav { padding: 0 1rem; }
+        }
+    </style>
+</head>
+<body>
+    {% if session.get('user') %}
+    <nav>
+        <div class="logo">SMS Sender</div>
+        <div class="nav-links">
+            <a href="{{ url_for('dashboard') }}" class="{{ 'active' if request.endpoint == 'dashboard' }}">Dashboard</a>
+            <a href="{{ url_for('contacts_page') }}" class="{{ 'active' if request.endpoint == 'contacts_page' }}">Rehber</a>
+            <a href="{{ url_for('send_page') }}" class="{{ 'active' if request.endpoint == 'send_page' }}">SMS Gönder</a>
+            <span class="user-badge">{{ session.user }}</span>
+            <a href="{{ url_for('logout_page') }}">Çıkış</a>
+        </div>
+    </nav>
+    {% endif %}
+
+    <div class="{% if not session.get('user') %}auth-wrapper{% else %}container{% endif %}">
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+            <div class="flash {{ category }}">{{ message }}</div>
+            {% endfor %}
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </div>
+</body>
+</html>
