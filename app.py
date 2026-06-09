@@ -1,4 +1,5 @@
 import os
+from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from dotenv import load_dotenv
 from auth import register, login, generate_otp, send_otp_sms, verify_otp
@@ -10,7 +11,9 @@ load_dotenv()
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "sms-sender-secret-key-change-me")
 
-EXCEL_PATH = os.getenv("EXCEL_PATH", "/Users/mfeteknolojia.s/Desktop/data.xlsx")
+UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+EXCEL_PATH = os.path.join(UPLOAD_FOLDER, "data.xlsx")
 
 _contacts_cache = None
 
@@ -18,8 +21,15 @@ _contacts_cache = None
 def get_contacts():
     global _contacts_cache
     if _contacts_cache is None:
+        if not os.path.exists(EXCEL_PATH):
+            return []
         _contacts_cache = read_excel(EXCEL_PATH)
     return _contacts_cache
+
+
+def clear_cache():
+    global _contacts_cache
+    _contacts_cache = None
 
 
 def get_sms_client():
@@ -125,6 +135,57 @@ def logout_page():
     session.clear()
     flash("Çıkış yapıldı.", "success")
     return redirect(url_for("login_page"))
+
+
+# ── Excel Import ──
+
+@app.route("/import", methods=["GET", "POST"])
+@login_required
+def import_page():
+    has_file = os.path.exists(EXCEL_PATH)
+    file_info = None
+    if has_file:
+        import datetime
+        stat = os.stat(EXCEL_PATH)
+        size_kb = round(stat.st_size / 1024, 1)
+        modified = datetime.datetime.fromtimestamp(stat.st_mtime).strftime("%d.%m.%Y %H:%M")
+        contacts = get_contacts()
+        file_info = {
+            "size": f"{size_kb} KB",
+            "modified": modified,
+            "total": len(contacts),
+            "sheets": len(set(c.sheet for c in contacts)) if contacts else 0,
+        }
+
+    if request.method == "POST":
+        if "file" not in request.files:
+            flash("Dosya seçilmedi.", "error")
+            return redirect(url_for("import_page"))
+
+        file = request.files["file"]
+        if file.filename == "":
+            flash("Dosya seçilmedi.", "error")
+            return redirect(url_for("import_page"))
+
+        if not file.filename.lower().endswith((".xlsx", ".xls")):
+            flash("Sadece Excel dosyaları (.xlsx, .xls) desteklenir.", "error")
+            return redirect(url_for("import_page"))
+
+        file.save(EXCEL_PATH)
+        clear_cache()
+
+        # Validate the file
+        try:
+            contacts = get_contacts()
+            flash(f"Excel başarıyla yüklendi! {len(contacts)} kayıt bulundu.", "success")
+        except Exception as e:
+            os.remove(EXCEL_PATH)
+            clear_cache()
+            flash(f"Excel dosyası okunamadı: {str(e)}", "error")
+
+        return redirect(url_for("import_page"))
+
+    return render_template("import.html", has_file=has_file, file_info=file_info)
 
 
 # ── Dashboard ──

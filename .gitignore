@@ -4,4 +4,5 @@ __pycache__/
 .session
 users.json
 *.xlsx
+uploads/
 .DS_Store
