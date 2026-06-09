@@ -60,10 +60,16 @@ def login_page():
             flash("Kullanıcı adı veya şifre hatalı.", "error")
             return redirect(url_for("login_page"))
 
+        # Skip OTP if Verimor not configured (dev mode)
+        sms_client = get_sms_client()
+        if not sms_client:
+            session["user"] = username
+            flash(f"Hoş geldin, {username}!", "success")
+            return redirect(url_for("dashboard"))
+
         otp = generate_otp(username)
         from auth import _load_users
         user_phone = _load_users()[username]["phone"]
-        sms_client = get_sms_client()
         send_otp_sms(user_phone, otp, sms_client)
 
         session["pending_user"] = username

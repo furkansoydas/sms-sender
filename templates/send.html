@@ -2,42 +2,50 @@
 {% block title %}SMS Gonder{% endblock %}
 {% block content %}
 
-<h1 class="page-title">SMS Gonder</h1>
+<div class="page-header">
+    <h1>SMS Gonder</h1>
+    <p>Toplu SMS gonderimi yapin</p>
+</div>
 
-<div class="alert alert-danger">
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+<div class="alert-banner danger">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
     <div>
-        <strong>Kara listedeki kisilere SMS gonderilmez</strong><br>
-        Excel'de kirmizi isaretli kisiler otomatik olarak gonderim listesinden cikarilmistir. Asagida sadece izin verilen kisiler yer alir.
+        <strong>Kara listedeki kisilere SMS gonderilmez.</strong>
+        Excel'de kirmizi isaretli kisiler otomatik olarak cikarilmistir.
     </div>
 </div>
 
-<div class="card">
-    <div class="card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
-        Yeni SMS Gonderimi
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            Yeni SMS Gonderimi
+        </div>
+        <span class="badge badge-green">{{ sendable_count }} kisi hazir</span>
     </div>
-    <form method="POST" novalidate>
-        <div class="form-group">
-            <label for="sheet" class="form-label">Hedef Sheet</label>
-            <select id="sheet" name="sheet" class="form-input">
-                <option value="all">Tumu ({{ sendable_count }} kisi)</option>
-                {% for s in sheets %}
-                <option value="{{ s }}">{{ s }}</option>
-                {% endfor %}
-            </select>
-        </div>
-        <div class="form-group">
-            <label for="message" class="form-label">SMS Mesaji</label>
-            <textarea id="message" name="message" class="form-input" placeholder="Mesajinizi buraya yazin..." required></textarea>
-            <p class="form-hint">Turkce karakter kullanirsaniz SMS uzunlugu 70 karaktere duser. Uzun mesajlar birden fazla SMS olarak ucretlendirilir.</p>
-        </div>
-        <input type="hidden" name="confirmed" value="false">
-        <button type="submit" class="btn btn-primary">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-            Onizleme
-        </button>
-    </form>
+    <div class="panel-body">
+        <form method="POST" novalidate>
+            <div class="field">
+                <label for="sheet">Hedef Sheet</label>
+                <select id="sheet" name="sheet" class="input">
+                    <option value="all">Tum sheet'ler ({{ sendable_count }} kisi)</option>
+                    {% for s in sheets %}
+                    <option value="{{ s }}">{{ s }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="field">
+                <label for="message">SMS Mesaji</label>
+                <textarea id="message" name="message" class="input" placeholder="Mesajinizi buraya yazin..." required></textarea>
+                <p class="field-hint">Turkce karakter kullanirsaniz SMS uzunlugu 70 karaktere duser. Uzun mesajlar birden fazla SMS olarak ucretlendirilir.</p>
+            </div>
+            <input type="hidden" name="confirmed" value="false">
+            <button type="submit" class="btn btn-accent">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                Onizleme
+            </button>
+        </form>
+    </div>
 </div>
 
 {% endblock %}

@@ -2,68 +2,88 @@
 {% block title %}SMS Onizleme{% endblock %}
 {% block content %}
 
-<h1 class="page-title">Gonderim Onayi</h1>
+<div class="page-header">
+    <h1>Gonderim Onayi</h1>
+    <p>Gondermeden once mesajinizi ve alicilari kontrol edin</p>
+</div>
 
-<div class="card mb-md" style="border-color: rgba(245,158,11,0.3);">
-    <div class="card-title" style="color: var(--warning);">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
-        Gondermeden once kontrol edin
+<div class="alert-banner warning">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>
+        <strong>Onay Bekliyor</strong> &mdash;
+        Asagidaki bilgileri kontrol edin. "SMS Gonder" butonuna bastiginizda mesajlar gonderilir ve geri alinamaz.
     </div>
+</div>
 
-    <div class="preview-box mb-md">
-        <div class="preview-label">Mesaj</div>
-        <p style="font-size:0.95rem; line-height:1.7; color: var(--text-primary);">{{ message }}</p>
-    </div>
-
-    <div class="grid-2">
-        <div class="preview-box">
-            <div class="preview-label">Alici Sayisi</div>
-            <div class="preview-value" style="color: var(--success);">{{ count }}</div>
+<!-- Message preview -->
+<div class="panel" style="border-color:rgba(88,166,255,0.15);">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Mesaj Icerigi
         </div>
-        <div class="preview-box">
-            <div class="preview-label">Sheet</div>
-            <div class="preview-value" style="color: var(--accent);">{{ sheet if sheet != 'all' else 'Tumu' }}</div>
+    </div>
+    <div class="panel-body">
+        <div class="preview-block" style="margin-bottom:16px;">
+            <p style="font-size:0.95rem; line-height:1.8; color:var(--text); white-space:pre-wrap;">{{ message }}</p>
+        </div>
+        <div class="grid-2">
+            <div class="preview-block">
+                <div class="preview-label">Alici Sayisi</div>
+                <div class="preview-big" style="color:var(--green);">{{ count }}</div>
+            </div>
+            <div class="preview-block">
+                <div class="preview-label">Hedef Sheet</div>
+                <div class="preview-big" style="color:var(--accent);">{{ sheet if sheet != 'all' else 'Tumu' }}</div>
+            </div>
         </div>
     </div>
 </div>
 
-<div class="card mb-md">
-    <div class="card-title">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
-        Alici Listesi
+<!-- Recipient list -->
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            Alici Listesi
+        </div>
+        <span class="badge badge-green">{{ count }} kisi</span>
     </div>
-    <div class="table-wrap">
-    <table>
-        <thead>
-            <tr>
-                <th style="width:40px">#</th>
-                <th>Firma</th>
-                <th>Telefon</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for t in targets[:50] %}
-            <tr>
-                <td class="text-muted">{{ loop.index }}</td>
-                <td><strong>{{ t.firma }}</strong></td>
-                <td class="text-mono">{{ t.phone }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+    <div class="panel-body flush">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40px">#</th>
+                    <th>Firma</th>
+                    <th>Telefon</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in targets[:50] %}
+                <tr>
+                    <td class="mono text-muted">{{ loop.index }}</td>
+                    <td><strong>{{ t.firma }}</strong></td>
+                    <td class="mono">{{ t.phone }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% if count > 50 %}
+        <div style="padding:14px 18px;border-top:1px solid var(--border);text-align:center;">
+            <span class="text-xs text-2">... ve <strong style="color:var(--text)">{{ count - 50 }}</strong> kisi daha</span>
+        </div>
+        {% endif %}
     </div>
-    {% if count > 50 %}
-    <p class="text-muted text-sm mt-md">... ve {{ count - 50 }} kisi daha</p>
-    {% endif %}
 </div>
 
-<div class="gap-row">
+<!-- Action buttons -->
+<div class="gap-row" style="margin-top:8px;">
     <form method="POST" action="{{ url_for('send_page') }}">
         <input type="hidden" name="message" value="{{ message }}">
         <input type="hidden" name="sheet" value="{{ sheet }}">
         <input type="hidden" name="confirmed" value="true">
-        <button type="submit" class="btn btn-success">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+        <button type="submit" class="btn btn-green">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
             SMS Gonder ({{ count }} kisi)
         </button>
     </form>
