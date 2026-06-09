@@ -5,4 +5,5 @@ __pycache__/
 users.json
 *.xlsx
 uploads/
+*.db
 .DS_Store

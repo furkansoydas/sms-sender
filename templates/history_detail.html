@@ -1,0 +1,100 @@
+{% extends "base.html" %}
+{% block title %}Batch Detay - SMS Sender{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+        <h1>Batch Detay</h1>
+        <p><span class="mono text-2">{{ batch.batch_uid }}</span> &middot; {{ batch.created_at }}</p>
+    </div>
+    <a href="{{ url_for('history_page') }}" class="btn btn-ghost">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+        Geri
+    </a>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            Mesaj
+        </div>
+        {% if batch.status == 'completed' %}
+            <span class="badge badge-green">TAMAM</span>
+        {% elif batch.status == 'failed' %}
+            <span class="badge badge-red">HATA</span>
+        {% else %}
+            <span class="badge badge-orange">{{ batch.status|upper }}</span>
+        {% endif %}
+    </div>
+    <div class="panel-body">
+        <div class="preview-block" style="margin-bottom:16px;">
+            <p style="font-size:0.95rem;line-height:1.7;color:var(--text);white-space:pre-wrap;">{{ batch.message }}</p>
+        </div>
+        <div class="grid-2">
+            <div class="preview-block">
+                <div class="preview-label">Toplam / Basarili / Hatali</div>
+                <div class="preview-big">
+                    <span style="color:var(--text)">{{ batch.total_recipients }}</span>
+                    <span style="color:var(--text-3);font-weight:400;"> / </span>
+                    <span style="color:var(--green)">{{ batch.successful }}</span>
+                    <span style="color:var(--text-3);font-weight:400;"> / </span>
+                    <span style="color:var(--red)">{{ batch.failed }}</span>
+                </div>
+            </div>
+            <div class="preview-block">
+                <div class="preview-label">Tamamlanma</div>
+                <div class="preview-big" style="color:var(--accent);font-size:1.1rem;">{{ batch.completed_at or '-' }}</div>
+            </div>
+        </div>
+        {% if batch.error_message %}
+        <div class="alert-banner danger" style="margin-top:16px;margin-bottom:0;">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            <div><strong>Hata:</strong> {{ batch.error_message }}</div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+            Gonderim Detayi ({{ logs|length }} kayit)
+        </div>
+    </div>
+    <div class="panel-body flush">
+        <div style="max-height:500px;overflow-y:auto;">
+        <table>
+            <thead>
+                <tr>
+                    <th style="width:40px">#</th>
+                    <th>Telefon</th>
+                    <th>Firma</th>
+                    <th>Gonderim Zamani</th>
+                    <th style="text-align:right">Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="mono text-muted">{{ loop.index }}</td>
+                    <td class="mono">{{ log.phone }}</td>
+                    <td>{{ log.firma or '-' }}</td>
+                    <td class="mono text-xs">{{ log.sent_at }}</td>
+                    <td style="text-align:right">
+                        {% if log.status == 'success' %}
+                            <span class="badge badge-green">OK</span>
+                        {% else %}
+                            <span class="badge badge-red" title="{{ log.response }}">HATA</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        </div>
+    </div>
+</div>
+
+{% endblock %}

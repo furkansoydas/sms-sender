@@ -1,0 +1,83 @@
+{% extends "base.html" %}
+{% block title %}Audit Log - SMS Sender{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Audit Log</h1>
+    <p>Sistemdeki tum kullanici aktivitelerinin kaydi</p>
+</div>
+
+<!-- Filters -->
+<div class="panel" style="margin-bottom:16px;">
+    <div class="panel-body">
+        <form method="GET" style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;">
+            <div class="field" style="flex:1;min-width:200px;margin:0;">
+                <label for="user">Kullanici</label>
+                <input type="text" id="user" name="user" class="input" placeholder="ornek: admin" value="{{ user_filter }}">
+            </div>
+            <div class="field" style="flex:1;min-width:200px;margin:0;">
+                <label for="action">Aksiyon</label>
+                <input type="text" id="action" name="action" class="input" placeholder="ornek: login, sms_sent" value="{{ action_filter }}">
+            </div>
+            <button type="submit" class="btn btn-accent">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+                Filtrele
+            </button>
+            {% if user_filter or action_filter %}
+            <a href="{{ url_for('audit_page') }}" class="btn btn-ghost">Temizle</a>
+            {% endif %}
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Aktivite Kayitlari ({{ logs|length }})
+        </div>
+    </div>
+    <div class="panel-body flush">
+        {% if logs %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Zaman</th>
+                    <th>Kullanici</th>
+                    <th>Aksiyon</th>
+                    <th>Detaylar</th>
+                    <th>IP</th>
+                    <th style="text-align:right">Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for log in logs %}
+                <tr>
+                    <td class="mono text-xs">{{ log.timestamp }}</td>
+                    <td><strong>{{ log.username or '-' }}</strong></td>
+                    <td><span class="badge {{ 'badge-red' if log.status == 'error' else 'badge-blue' }}">{{ log.action }}</span></td>
+                    <td class="text-sm" style="max-width:340px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ log.details }}">{{ log.details }}</td>
+                    <td class="mono text-xs">{{ log.ip_address or '-' }}</td>
+                    <td style="text-align:right">
+                        {% if log.status == 'success' %}
+                            <span class="badge badge-green">OK</span>
+                        {% elif log.status == 'error' %}
+                            <span class="badge badge-red">ERR</span>
+                        {% else %}
+                            <span class="badge badge-orange">{{ log.status|upper }}</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align:center;padding:60px 20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5" style="margin-bottom:16px"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg>
+            <p class="text-2" style="font-size:0.9rem;">Filtreye uygun kayit yok.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}

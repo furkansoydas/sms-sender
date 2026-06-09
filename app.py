@@ -5,8 +5,15 @@ from dotenv import load_dotenv
 from auth import register, login, generate_otp, send_otp_sms, verify_otp
 from excel_reader import read_excel
 from sms_sender import VerimorSMS
+from database import (
+    init_db, log_action, get_audit_log,
+    enqueue_sms, get_queue, retry_queue_item,
+    get_batches, get_batch_detail, get_stats
+)
+from queue_worker import start_worker, generate_batch_uid
 
 load_dotenv()
+init_db()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "sms-sender-secret-key-change-me")
@@ -67,6 +74,7 @@ def login_page():
         password = request.form.get("password", "").strip()
 
         if not login(username, password):
+            log_action(username, "login_failed", f"Hatalı şifre denemesi", ip=request.remote_addr, status="error")
             flash("Kullanıcı adı veya şifre hatalı.", "error")
             return redirect(url_for("login_page"))
 
@@ -74,6 +82,7 @@ def login_page():
         sms_client = get_sms_client()
         if not sms_client:
             session["user"] = username
+            log_action(username, "login_success", "OTP atlandı (dev mode)", ip=request.remote_addr)
             flash(f"Hoş geldin, {username}!", "success")
             return redirect(url_for("dashboard"))
 
@@ -100,6 +109,7 @@ def register_page():
             return redirect(url_for("register_page"))
 
         if register(username, password, phone):
+            log_action(username, "register", f"Yeni kullanıcı kaydı (tel: {phone})", ip=request.remote_addr)
             flash("Kayıt başarılı! Giriş yapabilirsiniz.", "success")
             return redirect(url_for("login_page"))
         else:
@@ -121,9 +131,11 @@ def otp_page():
         if verify_otp(username, otp_input):
             session.pop("pending_user", None)
             session["user"] = username
+            log_action(username, "login_success", "OTP doğrulandı", ip=request.remote_addr)
             flash(f"Hoş geldin, {username}!", "success")
             return redirect(url_for("dashboard"))
         else:
+            log_action(username, "otp_failed", "Hatalı OTP kodu", ip=request.remote_addr, status="error")
             flash("OTP kodu hatalı veya süresi dolmuş.", "error")
             return redirect(url_for("otp_page"))
 
@@ -132,6 +144,8 @@ def otp_page():
 
 @app.route("/logout")
 def logout_page():
+    if session.get("user"):
+        log_action(session["user"], "logout", "Oturum kapatıldı", ip=request.remote_addr)
     session.clear()
     flash("Çıkış yapıldı.", "success")
     return redirect(url_for("login_page"))
@@ -310,16 +324,23 @@ def send_page():
                 selected_indices=",".join(selected_indices),
             )
 
-        # Actual send
-        sms_client = get_sms_client()
-        if not sms_client:
-            flash("Verimor API ayarları eksik. .env dosyasını kontrol edin.", "error")
-            return redirect(url_for("send_page"))
+        # Queue the SMS — worker will process it
+        seen = set()
+        phones = []
+        firmas = []
+        for c in targets:
+            for p in c.valid_phones:
+                if p not in seen:
+                    seen.add(p)
+                    phones.append(p)
+                    firmas.append(c.firma)
 
-        results = sms_client.send_bulk(targets, message, dry_run=False)
-        success = sum(1 for r in results if r["status"] == 200)
-        flash(f"SMS gönderildi: {success}/{len(results)} başarılı", "success")
-        return redirect(url_for("dashboard"))
+        batch_uid = generate_batch_uid()
+        enqueue_sms(batch_uid, session["user"], message, phones, firmas, "bulk")
+        log_action(session["user"], "sms_queued",
+                   f"Toplu SMS kuyruğa alındı: {len(phones)} numara (batch: {batch_uid})")
+        flash(f"{len(phones)} numaralık SMS kuyruğa alındı. Queue sayfasından durumu izleyebilirsiniz.", "success")
+        return redirect(url_for("queue_page"))
 
     return render_template("send.html", sheets=sheets, contacts=indexed, sendable_count=len(sendable))
 
@@ -396,29 +417,84 @@ def manual_send_page():
             flash("Geçerli numara bulunamadı veya tümü kara listede.", "error")
             return redirect(url_for("manual_send_page"))
 
-        sms_client = get_sms_client()
-        if not sms_client:
-            flash("Verimor API ayarları eksik. .env dosyasını kontrol edin.", "error")
-            return redirect(url_for("manual_send_page"))
+        # Queue
+        batch_uid = generate_batch_uid()
+        firmas = ["Manuel"] * len(sendable_phones)
+        enqueue_sms(batch_uid, session["user"], message, sendable_phones, firmas, "manual")
 
-        result = sms_client.send_to_phones(sendable_phones, message)
+        details = f"Manuel SMS kuyruğa alındı: {len(sendable_phones)} numara"
+        if blocked:
+            details += f", {len(blocked)} kara liste atlandı"
+        if invalid:
+            details += f", {len(invalid)} geçersiz atlandı"
+        log_action(session["user"], "sms_queued_manual", f"{details} (batch: {batch_uid})")
 
-        if result["status"] == 200:
-            msg = f"SMS gönderildi: {len(sendable_phones)} numara"
-            if blocked:
-                msg += f" (Kara listedeki {len(blocked)} numara atlandı)"
-            if invalid:
-                msg += f" (Geçersiz {len(invalid)} numara atlandı)"
-            flash(msg, "success")
-        else:
-            flash(f"Gönderim hatası ({result['status']}): {result['response']}", "error")
-
-        return redirect(url_for("manual_send_page"))
+        msg = f"{len(sendable_phones)} numaralık SMS kuyruğa alındı"
+        if blocked:
+            msg += f" (Kara liste: {len(blocked)} atlandı)"
+        if invalid:
+            msg += f" (Geçersiz: {len(invalid)} atlandı)"
+        flash(msg, "success")
+        return redirect(url_for("queue_page"))
 
     return render_template("manual_send.html")
 
 
+# ── Queue Page ──
+
+@app.route("/queue")
+@login_required
+def queue_page():
+    queue_items = get_queue(limit=200)
+    stats = get_stats()
+    return render_template("queue.html", items=queue_items, stats=stats)
+
+
+@app.route("/queue/retry/<int:queue_id>")
+@login_required
+def queue_retry(queue_id):
+    retry_queue_item(queue_id)
+    log_action(session["user"], "queue_retry", f"Queue ID {queue_id} yeniden denemeye alındı")
+    flash("Queue işi yeniden denenecek.", "success")
+    return redirect(url_for("queue_page"))
+
+
+# ── SMS History ──
+
+@app.route("/history")
+@login_required
+def history_page():
+    batches = get_batches(limit=200)
+    stats = get_stats()
+    return render_template("history.html", batches=batches, stats=stats)
+
+
+@app.route("/history/<batch_uid>")
+@login_required
+def history_detail(batch_uid):
+    batch, logs = get_batch_detail(batch_uid)
+    if not batch:
+        flash("Batch bulunamadı.", "error")
+        return redirect(url_for("history_page"))
+    return render_template("history_detail.html", batch=batch, logs=logs)
+
+
+# ── Audit Log ──
+
+@app.route("/audit")
+@login_required
+def audit_page():
+    user_filter = request.args.get("user", "")
+    action_filter = request.args.get("action", "")
+    logs = get_audit_log(limit=300,
+                         username=user_filter or None,
+                         action=action_filter or None)
+    return render_template("audit.html", logs=logs, user_filter=user_filter, action_filter=action_filter)
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5050))
+    # Start background queue worker
+    start_worker(get_sms_client)
     print(f"\n  SMS Sender çalışıyor: http://localhost:{port}\n")
-    app.run(debug=True, port=port, host="0.0.0.0")
+    app.run(debug=True, port=port, host="0.0.0.0", use_reloader=False)

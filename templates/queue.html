@@ -1,0 +1,125 @@
+{% extends "base.html" %}
+{% block title %}SMS Queue - SMS Sender{% endblock %}
+{% block content %}
+
+<div class="page-header" style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <div>
+        <h1>SMS Queue</h1>
+        <p>Arka planda işlenen SMS gönderim kuyruğu</p>
+    </div>
+    <div class="auto-refresh">
+        <span class="pulse-dot"></span>
+        <span class="text-xs text-2">Otomatik yenileme (10sn)</span>
+    </div>
+</div>
+
+<div class="stats-row" style="grid-template-columns: repeat(4, 1fr);">
+    <div class="stat-card c-blue">
+        <div class="stat-icon blue">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+        </div>
+        <div class="stat-number blue">{{ stats.queued }}</div>
+        <div class="stat-label">Kuyrukta</div>
+    </div>
+    <div class="stat-card c-green">
+        <div class="stat-icon green">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+        </div>
+        <div class="stat-number green">{{ stats.successful }}</div>
+        <div class="stat-label">Basarili</div>
+    </div>
+    <div class="stat-card c-red">
+        <div class="stat-icon red">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+        </div>
+        <div class="stat-number red">{{ stats.failed }}</div>
+        <div class="stat-label">Basarisiz</div>
+    </div>
+    <div class="stat-card c-purple">
+        <div class="stat-icon purple">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3h18v18H3z"/></svg>
+        </div>
+        <div class="stat-number purple">{{ stats.total_batches }}</div>
+        <div class="stat-label">Toplam Batch</div>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Queue Listesi ({{ items|length }})
+        </div>
+    </div>
+    <div class="panel-body flush">
+        {% if items %}
+        <table>
+            <thead>
+                <tr>
+                    <th>Batch UID</th>
+                    <th>Olusturulma</th>
+                    <th>Kullanici</th>
+                    <th>Tip</th>
+                    <th>Numara</th>
+                    <th>Mesaj</th>
+                    <th>Denemeler</th>
+                    <th style="text-align:right">Durum</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in items %}
+                <tr>
+                    <td class="mono text-xs">{{ item.batch_uid[:8] }}...</td>
+                    <td class="mono text-xs">{{ item.created_at }}</td>
+                    <td><strong>{{ item.username }}</strong></td>
+                    <td><span class="badge {{ 'badge-blue' if item.send_type == 'bulk' else 'badge-orange' }}">{{ item.send_type }}</span></td>
+                    <td class="mono">{{ item.phone_count }}</td>
+                    <td style="max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ item.message }}">{{ item.message[:50] }}{% if item.message|length > 50 %}...{% endif %}</td>
+                    <td class="mono">{{ item.attempts }}</td>
+                    <td style="text-align:right">
+                        {% if item.status == 'queued' %}
+                            <span class="badge badge-blue">KUYRUKTA</span>
+                        {% elif item.status == 'processing' %}
+                            <span class="badge badge-orange">ISLENIYOR</span>
+                        {% elif item.status == 'completed' %}
+                            <span class="badge badge-green">TAMAM</span>
+                        {% elif item.status == 'failed' %}
+                            <span class="badge badge-red" title="{{ item.error_message or '' }}">HATA</span>
+                            <a href="{{ url_for('queue_retry', queue_id=item.id) }}" class="btn btn-ghost" style="padding:4px 10px;font-size:0.7rem;margin-left:6px;">Tekrar</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <div style="text-align:center;padding:60px 20px;">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5" style="margin-bottom:16px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <p class="text-2" style="font-size:0.9rem;">Queue boş — bekleyen iş yok.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+    .auto-refresh { display:flex; align-items:center; gap:8px; }
+    .pulse-dot {
+        width:8px; height:8px; border-radius:50%;
+        background:var(--green); display:inline-block;
+        animation: pulse 1.6s infinite;
+    }
+    @keyframes pulse {
+        0%,100% { opacity:1; transform:scale(1); }
+        50% { opacity:0.4; transform:scale(0.85); }
+    }
+</style>
+
+<script>
+    // Auto-refresh every 10s if there are queued/processing items
+    {% set active = items|selectattr('status', 'in', ['queued', 'processing'])|list %}
+    {% if active %}
+    setTimeout(() => location.reload(), 10000);
+    {% endif %}
+</script>
+
+{% endblock %}
