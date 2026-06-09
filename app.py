@@ -8,7 +8,8 @@ from sms_sender import VerimorSMS
 from database import (
     init_db, log_action, get_audit_log,
     enqueue_sms, get_queue, retry_queue_item,
-    get_batches, get_batch_detail, get_stats
+    get_batches, get_batch_detail, get_stats,
+    get_conversations, get_conversation_history, get_phone_meta
 )
 from queue_worker import start_worker, generate_batch_uid
 
@@ -477,6 +478,70 @@ def history_detail(batch_uid):
         flash("Batch bulunamadı.", "error")
         return redirect(url_for("history_page"))
     return render_template("history_detail.html", batch=batch, logs=logs)
+
+
+# ── Messages (WhatsApp-style chat history) ──
+
+@app.route("/messages")
+@login_required
+def messages_page():
+    search = request.args.get("q", "").strip()
+    selected_phone = request.args.get("phone", "")
+
+    conversations = get_conversations(search=search)
+
+    conversation = None
+    phone_meta = None
+    if selected_phone:
+        conversation = get_conversation_history(selected_phone)
+        phone_meta = get_phone_meta(selected_phone)
+
+    return render_template("messages.html",
+        conversations=conversations,
+        conversation=conversation,
+        selected_phone=selected_phone,
+        phone_meta=phone_meta,
+        search=search,
+    )
+
+
+@app.route("/messages/send", methods=["POST"])
+@login_required
+def messages_send():
+    phone = request.form.get("phone", "").strip()
+    message = request.form.get("message", "").strip()
+
+    if not phone or not message:
+        flash("Telefon ve mesaj zorunlu.", "error")
+        return redirect(url_for("messages_page", phone=phone))
+
+    norm = _normalize_phone(phone)
+    if not norm:
+        flash("Geçersiz telefon numarası.", "error")
+        return redirect(url_for("messages_page", phone=phone))
+
+    # Check blacklist
+    contacts = get_contacts()
+    for c in contacts:
+        if c.is_blacklisted and norm in c.valid_phones:
+            flash("Bu numara kara listede, mesaj gönderilemez.", "error")
+            return redirect(url_for("messages_page", phone=phone))
+
+    # Get firma from meta or contacts
+    meta = get_phone_meta(norm)
+    firma = (meta and meta.get("firma")) or "-"
+    for c in contacts:
+        if norm in c.valid_phones:
+            firma = c.firma
+            break
+
+    batch_uid = generate_batch_uid()
+    enqueue_sms(batch_uid, session["user"], message, [norm], [firma], "chat")
+    log_action(session["user"], "sms_queued_chat",
+               f"Sohbet üzerinden SMS kuyruğa alındı: {norm} (batch: {batch_uid})")
+
+    flash("Mesaj kuyruğa alındı, gönderiliyor...", "success")
+    return redirect(url_for("messages_page", phone=norm))
 
 
 # ── Audit Log ──

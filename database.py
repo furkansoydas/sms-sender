@@ -237,6 +237,65 @@ def get_batch_detail(batch_uid: str):
         return dict(batch), [dict(l) for l in logs]
 
 
+def get_conversations(search: str = "", limit: int = 200):
+    """Get list of phone numbers with their last message info — WhatsApp style chat list."""
+    with get_db() as db:
+        q = """
+            SELECT
+                l.phone,
+                MAX(l.firma) as firma,
+                MAX(l.sent_at) as last_sent,
+                COUNT(*) as message_count,
+                (SELECT b.message FROM sms_log l2
+                 JOIN sms_batch b ON l2.batch_id = b.id
+                 WHERE l2.phone = l.phone
+                 ORDER BY l2.id DESC LIMIT 1) as last_message,
+                (SELECT l3.status FROM sms_log l3
+                 WHERE l3.phone = l.phone
+                 ORDER BY l3.id DESC LIMIT 1) as last_status
+            FROM sms_log l
+            WHERE 1=1
+        """
+        params = []
+        if search:
+            q += " AND (l.phone LIKE ? OR l.firma LIKE ?)"
+            params.extend([f"%{search}%", f"%{search}%"])
+        q += " GROUP BY l.phone ORDER BY last_sent DESC LIMIT ?"
+        params.append(limit)
+        return [dict(r) for r in db.execute(q, params).fetchall()]
+
+
+def get_conversation_history(phone: str):
+    """Get all messages sent to a specific phone number with batch info."""
+    with get_db() as db:
+        return [dict(r) for r in db.execute("""
+            SELECT
+                l.id, l.phone, l.firma, l.sent_at, l.status, l.response,
+                b.batch_uid, b.message, b.username, b.send_type, b.created_at as batch_created
+            FROM sms_log l
+            JOIN sms_batch b ON l.batch_id = b.id
+            WHERE l.phone = ?
+            ORDER BY l.id ASC
+        """, (phone,)).fetchall()]
+
+
+def get_phone_meta(phone: str):
+    """Get aggregate info about a phone: total sent, successful, failed, firma."""
+    with get_db() as db:
+        row = db.execute("""
+            SELECT
+                COUNT(*) as total,
+                SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END) as successful,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                MAX(firma) as firma,
+                MIN(sent_at) as first_sent,
+                MAX(sent_at) as last_sent
+            FROM sms_log
+            WHERE phone = ?
+        """, (phone,)).fetchone()
+        return dict(row) if row else None
+
+
 def get_stats():
     with get_db() as db:
         total_batches = db.execute("SELECT COUNT(*) c FROM sms_batch").fetchone()["c"]

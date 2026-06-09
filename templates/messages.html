@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+{% block title %}Mesajlar - SMS Sender{% endblock %}
+{% block main_class %}full-width{% endblock %}
+{% block content %}
+
+<div class="chat-app">
+    <!-- LEFT: Conversation list -->
+    <aside class="chat-list">
+        <div class="chat-list-header">
+            <div>
+                <h2>Mesajlar</h2>
+                <p class="text-xs text-2">{{ conversations|length }} sohbet</p>
+            </div>
+            <a href="{{ url_for('manual_send_page') }}" class="new-chat-btn" title="Yeni mesaj">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+            </a>
+        </div>
+
+        <form method="GET" class="chat-search">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+            <input type="text" name="q" value="{{ search }}" placeholder="Numara veya firma ara..." class="chat-search-input">
+            {% if search %}
+            <a href="{{ url_for('messages_page') }}" class="chat-search-clear">×</a>
+            {% endif %}
+        </form>
+
+        <div class="chat-list-body">
+            {% if conversations %}
+                {% for conv in conversations %}
+                <a href="{{ url_for('messages_page', phone=conv.phone, q=search) }}" class="conv-item {{ 'active' if conv.phone == selected_phone }}">
+                    <div class="conv-avatar">{{ (conv.firma or conv.phone[-4:])[0]|upper }}</div>
+                    <div class="conv-content">
+                        <div class="conv-row-top">
+                            <div class="conv-name">{{ conv.firma if conv.firma and conv.firma != 'Manuel' and conv.firma != '-' else conv.phone }}</div>
+                            <div class="conv-time">{{ conv.last_sent.split(' ')[0][5:] if conv.last_sent else '' }}</div>
+                        </div>
+                        <div class="conv-row-bot">
+                            <div class="conv-preview">{{ conv.last_message[:48] if conv.last_message else '' }}{% if conv.last_message and conv.last_message|length > 48 %}...{% endif %}</div>
+                            <div class="conv-badges">
+                                {% if conv.last_status == 'success' %}
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                {% elif conv.last_status == 'failed' %}
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                                {% endif %}
+                                <span class="msg-count">{{ conv.message_count }}</span>
+                            </div>
+                        </div>
+                        <div class="conv-phone mono">+{{ conv.phone }}</div>
+                    </div>
+                </a>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <svg width="42" height="42" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    <p class="text-2 text-sm" style="margin-top:12px;">{{ 'Aramaya uygun sohbet yok' if search else 'Henüz mesaj gönderilmemiş' }}</p>
+                </div>
+            {% endif %}
+        </div>
+    </aside>
+
+    <!-- RIGHT: Conversation detail -->
+    <section class="chat-detail">
+        {% if selected_phone and phone_meta %}
+            <div class="chat-header">
+                <div class="chat-header-info">
+                    <div class="chat-avatar-big">{{ (phone_meta.firma or selected_phone[-4:])[0]|upper }}</div>
+                    <div>
+                        <div class="chat-name">{{ phone_meta.firma if phone_meta.firma and phone_meta.firma != 'Manuel' and phone_meta.firma != '-' else 'Manuel Mesaj' }}</div>
+                        <div class="chat-phone mono">+{{ selected_phone }}</div>
+                    </div>
+                </div>
+                <div class="chat-header-stats">
+                    <div class="hstat">
+                        <span class="hstat-num">{{ phone_meta.total }}</span>
+                        <span class="hstat-label">Toplam</span>
+                    </div>
+                    <div class="hstat">
+                        <span class="hstat-num" style="color:var(--green)">{{ phone_meta.successful or 0 }}</span>
+                        <span class="hstat-label">Başarılı</span>
+                    </div>
+                    <div class="hstat">
+                        <span class="hstat-num" style="color:var(--red)">{{ phone_meta.failed or 0 }}</span>
+                        <span class="hstat-label">Hatalı</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="chat-messages" id="chatMessages">
+                {% set ns = namespace(last_date='') %}
+                {% for msg in conversation %}
+                    {% set msg_date = msg.sent_at.split(' ')[0] if msg.sent_at else '' %}
+                    {% if msg_date != ns.last_date %}
+                        <div class="date-divider"><span>{{ msg_date }}</span></div>
+                        {% set ns.last_date = msg_date %}
+                    {% endif %}
+                    <div class="bubble-wrap">
+                        <div class="bubble {{ 'bubble-success' if msg.status == 'success' else 'bubble-failed' }}">
+                            <div class="bubble-text">{{ msg.message }}</div>
+                            <div class="bubble-meta">
+                                <span class="bubble-type">{{ msg.send_type }}</span>
+                                <span class="bubble-by">{{ msg.username }}</span>
+                                <span class="bubble-time">{{ msg.sent_at.split(' ')[1][:5] if msg.sent_at else '' }}</span>
+                                {% if msg.status == 'success' %}
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+                                {% else %}
+                                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/></svg>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                {% endfor %}
+
+                {% if not conversation %}
+                <div class="empty-chat">
+                    <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                    <p class="text-2" style="margin-top:14px;">Bu numara ile henüz mesajlaşma yok.</p>
+                </div>
+                {% endif %}
+            </div>
+
+            <form class="chat-composer" method="POST" action="{{ url_for('messages_send') }}">
+                <input type="hidden" name="phone" value="{{ selected_phone }}">
+                <textarea name="message" class="chat-input" placeholder="Mesajınızı yazın..." required rows="1" id="chatInput"></textarea>
+                <div class="chat-composer-meta">
+                    <span id="chatCharCount" class="text-xs text-2">0 / 160</span>
+                </div>
+                <button type="submit" class="chat-send-btn">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+                </button>
+            </form>
+        {% else %}
+            <div class="chat-placeholder">
+                <div class="chat-placeholder-icon">
+                    <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+                </div>
+                <h3>Sohbeti Seçin</h3>
+                <p>Soldaki listeden bir kişi seçerek gönderilen mesajların geçmişini görün ve yeni mesaj gönderin.</p>
+            </div>
+        {% endif %}
+    </section>
+</div>
+
+<style>
+    .chat-app {
+        display: grid;
+        grid-template-columns: 360px 1fr;
+        height: calc(100vh);
+        background: var(--bg);
+    }
+
+    /* ─── LEFT LIST ─── */
+    .chat-list {
+        background: var(--surface-1);
+        border-right: 1px solid var(--border);
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+    }
+    .chat-list-header {
+        padding: 22px 20px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        border-bottom: 1px solid var(--border);
+    }
+    .chat-list-header h2 {
+        font-size: 1.2rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+    }
+    .new-chat-btn {
+        width: 36px; height: 36px;
+        border-radius: 10px;
+        background: var(--gradient-3);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        transition: transform 0.2s;
+        text-decoration: none;
+    }
+    .new-chat-btn:hover { transform: scale(1.08); }
+
+    .chat-search {
+        padding: 12px 16px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        background: var(--surface-2);
+        margin: 12px;
+        border-radius: var(--radius-sm);
+        border: 1px solid var(--border);
+        position: relative;
+    }
+    .chat-search svg { color: var(--text-3); flex-shrink: 0; }
+    .chat-search-input {
+        background: transparent;
+        border: none;
+        outline: none;
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 0.85rem;
+        flex: 1;
+    }
+    .chat-search-input::placeholder { color: var(--text-3); }
+    .chat-search-clear {
+        color: var(--text-3);
+        text-decoration: none;
+        font-size: 1.4rem;
+        line-height: 1;
+        padding: 0 4px;
+    }
+    .chat-search-clear:hover { color: var(--text); }
+
+    .chat-list-body {
+        flex: 1;
+        overflow-y: auto;
+    }
+    .chat-list-body::-webkit-scrollbar { width: 6px; }
+    .chat-list-body::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
+
+    .conv-item {
+        display: flex;
+        gap: 12px;
+        padding: 12px 16px;
+        cursor: pointer;
+        text-decoration: none;
+        color: inherit;
+        border-bottom: 1px solid rgba(255,255,255,0.02);
+        transition: background 0.15s;
+    }
+    .conv-item:hover { background: rgba(255,255,255,0.025); }
+    .conv-item.active {
+        background: rgba(88,166,255,0.08);
+        border-left: 3px solid var(--accent);
+        padding-left: 13px;
+    }
+    .conv-avatar {
+        width: 42px; height: 42px;
+        border-radius: 50%;
+        background: var(--gradient-1);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1rem;
+        flex-shrink: 0;
+    }
+    .conv-content {
+        flex: 1;
+        min-width: 0;
+    }
+    .conv-row-top {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 8px;
+        margin-bottom: 3px;
+    }
+    .conv-name {
+        font-weight: 600;
+        font-size: 0.875rem;
+        color: var(--text);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+    }
+    .conv-time {
+        font-size: 0.7rem;
+        color: var(--text-3);
+        font-family: var(--mono);
+        flex-shrink: 0;
+    }
+    .conv-row-bot {
+        display: flex;
+        justify-content: space-between;
+        gap: 8px;
+        align-items: center;
+    }
+    .conv-preview {
+        color: var(--text-2);
+        font-size: 0.78rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        flex: 1;
+        min-width: 0;
+    }
+    .conv-badges {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        flex-shrink: 0;
+    }
+    .msg-count {
+        background: var(--accent);
+        color: #000;
+        padding: 1px 8px;
+        border-radius: 10px;
+        font-size: 0.65rem;
+        font-weight: 700;
+        font-family: var(--mono);
+    }
+    .conv-phone {
+        font-size: 0.7rem;
+        color: var(--text-3);
+        margin-top: 2px;
+    }
+
+    /* ─── RIGHT DETAIL ─── */
+    .chat-detail {
+        display: flex;
+        flex-direction: column;
+        height: 100vh;
+        background:
+            radial-gradient(at 20% 10%, rgba(102,126,234,0.04) 0%, transparent 50%),
+            radial-gradient(at 80% 80%, rgba(67,233,123,0.03) 0%, transparent 50%),
+            var(--bg);
+    }
+    .chat-header {
+        padding: 16px 24px;
+        border-bottom: 1px solid var(--border);
+        background: var(--surface-1);
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 16px;
+    }
+    .chat-header-info {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+    }
+    .chat-avatar-big {
+        width: 48px; height: 48px;
+        border-radius: 50%;
+        background: var(--gradient-1);
+        display: flex; align-items: center; justify-content: center;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.1rem;
+    }
+    .chat-name {
+        font-size: 1rem;
+        font-weight: 700;
+    }
+    .chat-phone {
+        font-size: 0.8rem;
+        color: var(--text-2);
+    }
+    .chat-header-stats {
+        display: flex;
+        gap: 24px;
+    }
+    .hstat {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 2px;
+    }
+    .hstat-num {
+        font-family: var(--mono);
+        font-size: 1.1rem;
+        font-weight: 700;
+        color: var(--text);
+    }
+    .hstat-label {
+        font-size: 0.65rem;
+        color: var(--text-3);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+
+    .chat-messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 24px 32px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .chat-messages::-webkit-scrollbar { width: 6px; }
+    .chat-messages::-webkit-scrollbar-thumb { background: var(--border-hover); border-radius: 3px; }
+
+    .date-divider {
+        text-align: center;
+        margin: 16px 0 10px;
+    }
+    .date-divider span {
+        background: var(--surface-2);
+        padding: 4px 14px;
+        border-radius: 14px;
+        font-size: 0.7rem;
+        color: var(--text-3);
+        font-family: var(--mono);
+        border: 1px solid var(--border);
+    }
+
+    .bubble-wrap {
+        display: flex;
+        justify-content: flex-end;
+        margin-bottom: 4px;
+        animation: bubbleIn 0.3s ease-out;
+    }
+    @keyframes bubbleIn {
+        from { opacity: 0; transform: translateY(8px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    .bubble {
+        max-width: 480px;
+        padding: 10px 14px 6px;
+        border-radius: 16px 16px 4px 16px;
+        position: relative;
+        box-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    .bubble-success {
+        background: linear-gradient(135deg, #1a4d2e 0%, #2d6a4f 100%);
+        border: 1px solid rgba(63,185,80,0.25);
+    }
+    .bubble-failed {
+        background: linear-gradient(135deg, #4d1a1a 0%, #6a2d2d 100%);
+        border: 1px solid rgba(248,81,73,0.25);
+        opacity: 0.85;
+    }
+    .bubble-text {
+        font-size: 0.9rem;
+        color: var(--text);
+        line-height: 1.45;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+    }
+    .bubble-meta {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        margin-top: 4px;
+        font-size: 0.68rem;
+        color: rgba(255,255,255,0.55);
+        justify-content: flex-end;
+    }
+    .bubble-type {
+        background: rgba(255,255,255,0.08);
+        padding: 1px 6px;
+        border-radius: 6px;
+        font-family: var(--mono);
+        text-transform: uppercase;
+        font-size: 0.6rem;
+        letter-spacing: 0.05em;
+    }
+    .bubble-by { font-style: italic; }
+    .bubble-time { font-family: var(--mono); }
+    .bubble-success .bubble-meta svg { color: rgba(126,231,135,0.9); }
+    .bubble-failed .bubble-meta svg { color: rgba(255,161,152,0.9); }
+
+    .empty-chat {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px;
+    }
+
+    .chat-composer {
+        padding: 16px 24px;
+        background: var(--surface-1);
+        border-top: 1px solid var(--border);
+        display: grid;
+        grid-template-columns: 1fr auto auto;
+        align-items: end;
+        gap: 12px;
+    }
+    .chat-input {
+        background: var(--surface-2);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 12px 16px;
+        color: var(--text);
+        font-family: var(--font);
+        font-size: 0.9rem;
+        outline: none;
+        resize: none;
+        max-height: 120px;
+        min-height: 44px;
+        line-height: 1.4;
+        transition: border 0.2s;
+    }
+    .chat-input:focus { border-color: var(--accent); }
+    .chat-input::placeholder { color: var(--text-3); }
+    .chat-composer-meta {
+        padding-bottom: 14px;
+        white-space: nowrap;
+    }
+    .chat-send-btn {
+        width: 44px; height: 44px;
+        border-radius: 50%;
+        background: var(--accent);
+        color: #000;
+        border: none;
+        cursor: pointer;
+        display: flex; align-items: center; justify-content: center;
+        transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .chat-send-btn:hover {
+        transform: scale(1.06);
+        box-shadow: 0 4px 16px rgba(88,166,255,0.4);
+    }
+
+    .chat-placeholder {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        padding: 40px;
+    }
+    .chat-placeholder-icon {
+        width: 130px; height: 130px;
+        border-radius: 32px;
+        background: linear-gradient(135deg, rgba(102,126,234,0.1), rgba(67,233,123,0.06));
+        display: flex; align-items: center; justify-content: center;
+        margin-bottom: 24px;
+        color: var(--text-3);
+    }
+    .chat-placeholder h3 {
+        font-size: 1.4rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+        margin-bottom: 8px;
+    }
+    .chat-placeholder p {
+        color: var(--text-2);
+        font-size: 0.9rem;
+        max-width: 380px;
+        line-height: 1.6;
+    }
+
+    .empty-state {
+        padding: 60px 20px;
+        text-align: center;
+    }
+
+    @media (max-width: 900px) {
+        .chat-app { grid-template-columns: 1fr; }
+        .chat-list { display: {{ 'none' if selected_phone else 'flex' }}; }
+        .chat-detail { display: {{ 'flex' if selected_phone else 'none' }}; }
+        .chat-header-stats { display: none; }
+    }
+</style>
+
+<script>
+    // Auto-scroll messages to bottom
+    (function() {
+        const msgs = document.getElementById('chatMessages');
+        if (msgs) msgs.scrollTop = msgs.scrollHeight;
+    })();
+
+    // Char counter + auto-resize for composer
+    (function() {
+        const input = document.getElementById('chatInput');
+        const counter = document.getElementById('chatCharCount');
+        if (!input) return;
+        function update() {
+            const len = input.value.length;
+            const hasTurkish = /[çÇğĞıİöÖşŞüÜ]/.test(input.value);
+            const limit = hasTurkish ? 70 : 160;
+            counter.textContent = len + ' / ' + limit;
+            counter.style.color = len > limit ? 'var(--orange)' : 'var(--text-2)';
+            // Auto-resize
+            input.style.height = 'auto';
+            input.style.height = Math.min(input.scrollHeight, 120) + 'px';
+        }
+        input.addEventListener('input', update);
+        // Send on Enter (Shift+Enter for newline)
+        input.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                input.closest('form').submit();
+            }
+        });
+    })();
+</script>
+
+{% endblock %}
