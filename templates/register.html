@@ -1,17 +1,9 @@
 {% extends "base.html" %}
+{% from "_auth_carousel.html" import auth_carousel %}
 {% block title %}Kayit - SMS Sender{% endblock %}
 {% block auth_content %}
 <div class="auth-layout">
-    <div class="auth-visual">
-        <div class="auth-visual-content">
-            <div class="auth-visual-icon" style="background:var(--gradient-4); box-shadow: 0 8px 32px rgba(67,233,123,0.3);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
-            </div>
-            <h2>Hesap Olustur</h2>
-            <p>OTP dogrulamali guvenli giris sistemi. Telefon numaraniza dogrulama kodu gonderilecek.</p>
-        </div>
-        <div class="auth-dots"><span></span><span class="active"></span><span></span></div>
-    </div>
+    {{ auth_carousel(active_dot=1) }}
     <div class="auth-form-side">
         <div class="auth-form">
             <h1>Kayit Ol</h1>

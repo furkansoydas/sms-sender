@@ -1,17 +1,9 @@
 {% extends "base.html" %}
+{% from "_auth_carousel.html" import auth_carousel %}
 {% block title %}Giris - SMS Sender{% endblock %}
 {% block auth_content %}
 <div class="auth-layout">
-    <div class="auth-visual">
-        <div class="auth-visual-content">
-            <div class="auth-visual-icon">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
-            </div>
-            <h2>SMS Sender</h2>
-            <p>Excel'den toplu SMS gonderimi. Akilli filtreleme, kara liste korumasi ve detayli raporlama.</p>
-        </div>
-        <div class="auth-dots"><span class="active"></span><span></span><span></span></div>
-    </div>
+    {{ auth_carousel(active_dot=0) }}
     <div class="auth-form-side">
         <div class="auth-form">
             <h1>Tekrar hosgeldin</h1>

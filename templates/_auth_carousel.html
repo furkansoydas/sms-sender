@@ -1,0 +1,94 @@
+{% macro auth_carousel(active_dot=0) %}
+<div class="auth-visual">
+    <div class="auth-particles">
+        <span class="auth-particle" style="left:8%;animation-delay:0s;"></span>
+        <span class="auth-particle" style="left:18%;animation-delay:3s;"></span>
+        <span class="auth-particle" style="left:28%;animation-delay:6s;"></span>
+        <span class="auth-particle" style="left:42%;animation-delay:9s;"></span>
+        <span class="auth-particle" style="left:55%;animation-delay:12s;"></span>
+        <span class="auth-particle" style="left:68%;animation-delay:2s;"></span>
+        <span class="auth-particle" style="left:78%;animation-delay:5s;"></span>
+        <span class="auth-particle" style="left:88%;animation-delay:8s;"></span>
+    </div>
+
+    <div class="auth-carousel">
+        <div class="auth-slide {{ 'active' if active_dot == 0 }}" data-slide="0">
+            <div class="auth-slide-icon g1">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            </div>
+            <h2>Toplu SMS Platformu</h2>
+            <p>Excel rehberinden binlerce kisiye saniyeler icinde mesaj gonder. Kara liste korumasi ve detayli raporlama dahil.</p>
+            <div class="auth-slide-features">
+                <div class="auth-slide-feature"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>Excel'den otomatik import</span></div>
+                <div class="auth-slide-feature"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>Akilli numara validasyonu</span></div>
+                <div class="auth-slide-feature"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>Verimor entegrasyonu</span></div>
+            </div>
+        </div>
+
+        <div class="auth-slide {{ 'active' if active_dot == 1 }}" data-slide="1">
+            <div class="auth-slide-icon g2">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            </div>
+            <h2>Queue & Takip</h2>
+            <p>Arka planda calisan kuyruk sistemi ile asenkron SMS gonderimi. Her batch icin detayli durum izleme.</p>
+            <div class="auth-slide-features">
+                <div class="auth-slide-feature"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>Arka planda otomatik isleme</span></div>
+                <div class="auth-slide-feature"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>Canli durum izleme</span></div>
+                <div class="auth-slide-feature"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>Hatali isleri yeniden deneme</span></div>
+            </div>
+        </div>
+
+        <div class="auth-slide {{ 'active' if active_dot == 2 }}" data-slide="2">
+            <div class="auth-slide-icon g3">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+            </div>
+            <h2>Guvenli ve Denetlenebilir</h2>
+            <p>OTP dogrulamali giris, tam audit log, kullanici aktivite takibi. Hicbir sey kayit disi kalmiyor.</p>
+            <div class="auth-slide-features">
+                <div class="auth-slide-feature"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>OTP iki faktorlu kimlik</span></div>
+                <div class="auth-slide-feature"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>Detayli audit log</span></div>
+                <div class="auth-slide-feature"><span class="check"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span><span>IP ve zaman damgali kayitlar</span></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="auth-dots">
+        <button type="button" class="{{ 'active' if active_dot == 0 }}" data-go="0" aria-label="Slide 1"></button>
+        <button type="button" class="{{ 'active' if active_dot == 1 }}" data-go="1" aria-label="Slide 2"></button>
+        <button type="button" class="{{ 'active' if active_dot == 2 }}" data-go="2" aria-label="Slide 3"></button>
+    </div>
+</div>
+
+<script>
+(function() {
+    const slides = document.querySelectorAll('.auth-slide');
+    const dots = document.querySelectorAll('.auth-dots button');
+    let current = {{ active_dot }};
+    let timer;
+
+    function go(idx) {
+        slides[current].classList.remove('active');
+        slides[current].classList.add('exit-left');
+        dots[current].classList.remove('active');
+        current = idx;
+        setTimeout(() => {
+            slides.forEach(s => s.classList.remove('exit-left'));
+            slides[current].classList.add('active');
+            dots[current].classList.add('active');
+        }, 50);
+    }
+
+    function next() { go((current + 1) % slides.length); }
+
+    dots.forEach((dot, i) => {
+        dot.addEventListener('click', () => {
+            clearInterval(timer);
+            go(i);
+            timer = setInterval(next, 4500);
+        });
+    });
+
+    timer = setInterval(next, 4500);
+})();
+</script>
+{% endmacro %}

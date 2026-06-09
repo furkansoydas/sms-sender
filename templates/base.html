@@ -414,7 +414,11 @@
             grid-template-columns: 1fr 1fr;
         }
         .auth-visual {
-            background: var(--surface-1);
+            background:
+                radial-gradient(at 20% 20%, rgba(102,126,234,0.18) 0%, transparent 50%),
+                radial-gradient(at 80% 60%, rgba(67,233,123,0.12) 0%, transparent 50%),
+                radial-gradient(at 60% 100%, rgba(245,87,108,0.10) 0%, transparent 50%),
+                var(--surface-1);
             display: flex; align-items: center; justify-content: center;
             position: relative;
             overflow: hidden;
@@ -422,32 +426,142 @@
         .auth-visual::before {
             content: '';
             position: absolute;
-            width: 500px; height: 500px;
+            width: 600px; height: 600px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(88,166,255,0.08) 0%, transparent 70%);
+            background: radial-gradient(circle, rgba(88,166,255,0.06) 0%, transparent 70%);
             top: 50%; left: 50%; transform: translate(-50%,-50%);
+            animation: floatBlob 12s ease-in-out infinite;
         }
-        .auth-visual-content { position: relative; z-index: 1; text-align: center; padding: 40px; }
-        .auth-visual-icon {
-            width: 80px; height: 80px;
-            border-radius: 24px;
-            background: var(--gradient-3);
+        @keyframes floatBlob {
+            0%,100% { transform: translate(-50%,-50%) scale(1); }
+            50% { transform: translate(-50%,-50%) scale(1.15); }
+        }
+
+        .auth-carousel {
+            position: relative;
+            width: 100%;
+            max-width: 440px;
+            padding: 40px;
+            z-index: 2;
+        }
+        .auth-slide {
+            position: absolute;
+            inset: 40px;
+            opacity: 0;
+            transform: translateX(40px) scale(0.96);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            pointer-events: none;
+        }
+        .auth-slide.active {
+            opacity: 1;
+            transform: translateX(0) scale(1);
+            pointer-events: auto;
+        }
+        .auth-slide.exit-left {
+            transform: translateX(-40px) scale(0.96);
+        }
+        .auth-slide-icon {
+            width: 88px; height: 88px;
+            border-radius: 26px;
             display: inline-flex; align-items: center; justify-content: center;
-            margin-bottom: 24px;
-            box-shadow: 0 8px 32px rgba(79,172,254,0.3);
+            margin-bottom: 28px;
+            position: relative;
+            animation: iconPulse 3s ease-in-out infinite;
         }
-        .auth-visual-icon svg { width: 36px; height: 36px; color: #fff; }
-        .auth-visual h2 { font-size: 1.5rem; font-weight: 700; margin-bottom: 8px; }
-        .auth-visual p { color: var(--text-2); font-size: 0.9rem; max-width: 300px; margin: 0 auto; line-height: 1.6; }
+        @keyframes iconPulse {
+            0%,100% { box-shadow: 0 8px 40px rgba(79,172,254,0.25); }
+            50% { box-shadow: 0 8px 60px rgba(79,172,254,0.5); }
+        }
+        .auth-slide-icon.g1 { background: var(--gradient-3); animation-name: iconPulse; }
+        .auth-slide-icon.g2 { background: var(--gradient-4); }
+        .auth-slide-icon.g2 { animation: iconPulse2 3s ease-in-out infinite; }
+        @keyframes iconPulse2 {
+            0%,100% { box-shadow: 0 8px 40px rgba(67,233,123,0.25); }
+            50% { box-shadow: 0 8px 60px rgba(67,233,123,0.5); }
+        }
+        .auth-slide-icon.g3 { background: var(--gradient-1); animation: iconPulse3 3s ease-in-out infinite; }
+        @keyframes iconPulse3 {
+            0%,100% { box-shadow: 0 8px 40px rgba(102,126,234,0.25); }
+            50% { box-shadow: 0 8px 60px rgba(102,126,234,0.5); }
+        }
+        .auth-slide-icon svg { width: 40px; height: 40px; color: #fff; }
+        .auth-slide h2 {
+            font-size: 1.6rem; font-weight: 800;
+            letter-spacing: -0.03em; margin-bottom: 10px;
+            background: linear-gradient(135deg, #E6EDF3 30%, #8B949E);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .auth-slide p {
+            color: var(--text-2);
+            font-size: 0.95rem;
+            max-width: 320px;
+            margin: 0 auto;
+            line-height: 1.7;
+        }
+        .auth-slide-features {
+            display: flex; flex-direction: column; gap: 10px;
+            margin-top: 28px;
+            text-align: left;
+            width: 100%;
+            max-width: 320px;
+        }
+        .auth-slide-feature {
+            display: flex; align-items: center; gap: 10px;
+            font-size: 0.85rem;
+            color: var(--text-2);
+        }
+        .auth-slide-feature .check {
+            width: 22px; height: 22px;
+            border-radius: 7px;
+            display: inline-flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            background: rgba(63,185,80,0.15);
+            color: var(--green);
+        }
+
         .auth-dots {
             position: absolute; bottom: 40px; left: 50%; transform: translateX(-50%);
-            display: flex; gap: 8px;
+            display: flex; gap: 10px;
+            z-index: 3;
         }
-        .auth-dots span {
+        .auth-dots button {
             width: 8px; height: 8px; border-radius: 50%;
-            background: rgba(255,255,255,0.08);
+            background: rgba(255,255,255,0.12);
+            border: none; padding: 0;
+            cursor: pointer;
+            transition: all 0.3s;
         }
-        .auth-dots span.active { background: var(--accent); width: 24px; border-radius: 4px; }
+        .auth-dots button:hover { background: rgba(255,255,255,0.25); }
+        .auth-dots button.active {
+            background: var(--accent);
+            width: 28px; border-radius: 4px;
+        }
+
+        /* Floating particles */
+        .auth-particles {
+            position: absolute; inset: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .auth-particle {
+            position: absolute;
+            width: 4px; height: 4px;
+            border-radius: 50%;
+            background: rgba(88,166,255,0.3);
+            animation: floatUp 18s linear infinite;
+        }
+        @keyframes floatUp {
+            0% { transform: translateY(110vh) translateX(0); opacity: 0; }
+            10% { opacity: 0.8; }
+            90% { opacity: 0.8; }
+            100% { transform: translateY(-10vh) translateX(30px); opacity: 0; }
+        }
 
         .auth-form-side {
             display: flex; align-items: center; justify-content: center;
@@ -589,16 +703,126 @@
         </main>
     </div>
     {% else %}
+        <div class="toast-container" id="toastContainer">
         {% with messages = get_flashed_messages(with_categories=true) %}
         {% if messages %}
             {% for category, message in messages %}
-            <div class="flash-msg {{ category }}" role="alert" style="position:fixed;top:20px;left:50%;transform:translateX(-50%);z-index:100;min-width:300px;">
-                {{ message }}
+            <div class="toast toast-{{ category }}" role="alert">
+                <div class="toast-icon">
+                    {% if category == 'error' %}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>
+                    {% else %}
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                    {% endif %}
+                </div>
+                <div class="toast-body">
+                    <div class="toast-title">{{ 'Hata' if category == 'error' else 'Basarili' }}</div>
+                    <div class="toast-message">{{ message }}</div>
+                </div>
+                <button class="toast-close" onclick="this.parentElement.classList.add('toast-exit')">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+                <div class="toast-progress"></div>
             </div>
             {% endfor %}
         {% endif %}
         {% endwith %}
+        </div>
         {% block auth_content %}{% endblock %}
+
+        <style>
+            .toast-container {
+                position: fixed;
+                top: 24px;
+                right: 24px;
+                display: flex;
+                flex-direction: column;
+                gap: 12px;
+                z-index: 1000;
+                pointer-events: none;
+            }
+            .toast {
+                pointer-events: auto;
+                display: flex;
+                align-items: flex-start;
+                gap: 12px;
+                min-width: 320px;
+                max-width: 420px;
+                padding: 14px 18px 14px 14px;
+                background: var(--surface-2);
+                border: 1px solid var(--border);
+                border-radius: var(--radius);
+                box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+                position: relative;
+                overflow: hidden;
+                animation: toastSlideIn 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+            }
+            .toast.toast-exit {
+                animation: toastSlideOut 0.4s cubic-bezier(0.4, 0, 1, 1) forwards;
+            }
+            @keyframes toastSlideIn {
+                from { transform: translateX(120%); opacity: 0; }
+                to { transform: translateX(0); opacity: 1; }
+            }
+            @keyframes toastSlideOut {
+                from { transform: translateX(0); opacity: 1; }
+                to { transform: translateX(120%); opacity: 0; }
+            }
+            .toast-icon {
+                width: 38px; height: 38px;
+                border-radius: 11px;
+                display: flex; align-items: center; justify-content: center;
+                flex-shrink: 0;
+            }
+            .toast-success .toast-icon { background: var(--green-glow); color: var(--green); }
+            .toast-error .toast-icon { background: var(--red-glow); color: var(--red); }
+            .toast-body { flex: 1; min-width: 0; }
+            .toast-title {
+                font-size: 0.875rem;
+                font-weight: 700;
+                color: var(--text);
+                margin-bottom: 2px;
+            }
+            .toast-message {
+                font-size: 0.825rem;
+                color: var(--text-2);
+                line-height: 1.45;
+            }
+            .toast-close {
+                background: transparent;
+                border: none;
+                color: var(--text-3);
+                cursor: pointer;
+                padding: 4px;
+                border-radius: 6px;
+                transition: background 0.15s, color 0.15s;
+            }
+            .toast-close:hover { background: rgba(255,255,255,0.06); color: var(--text); }
+            .toast-progress {
+                position: absolute;
+                bottom: 0; left: 0;
+                height: 3px;
+                width: 100%;
+                background: linear-gradient(90deg, var(--accent), var(--green));
+                animation: toastProgress 4s linear forwards;
+                transform-origin: left;
+            }
+            .toast-error .toast-progress { background: linear-gradient(90deg, var(--red), var(--orange)); }
+            @keyframes toastProgress {
+                from { transform: scaleX(1); }
+                to { transform: scaleX(0); }
+            }
+        </style>
+
+        <script>
+            // Auto-dismiss toasts after 4s
+            document.querySelectorAll('.toast').forEach((toast, idx) => {
+                setTimeout(() => toast.classList.add('toast-exit'), 4000 + idx * 200);
+                toast.addEventListener('animationend', (e) => {
+                    if (e.animationName === 'toastSlideOut') toast.remove();
+                });
+            });
+        </script>
     {% endif %}
 </body>
 </html>

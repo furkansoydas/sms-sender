@@ -1,17 +1,9 @@
 {% extends "base.html" %}
+{% from "_auth_carousel.html" import auth_carousel %}
 {% block title %}OTP Dogrulama{% endblock %}
 {% block auth_content %}
 <div class="auth-layout">
-    <div class="auth-visual">
-        <div class="auth-visual-content">
-            <div class="auth-visual-icon" style="background:var(--gradient-1); box-shadow: 0 8px 32px rgba(102,126,234,0.3);">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/><circle cx="12" cy="16" r="1"/></svg>
-            </div>
-            <h2>Guvenlik Dogrulamasi</h2>
-            <p>Hesabinizi korumak icin telefonunuza 6 haneli bir dogrulama kodu gonderdik.</p>
-        </div>
-        <div class="auth-dots"><span></span><span></span><span class="active"></span></div>
-    </div>
+    {{ auth_carousel(active_dot=2) }}
     <div class="auth-form-side">
         <div class="auth-form">
             <h1>Kodu Gir</h1>
