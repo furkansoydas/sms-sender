@@ -1,18 +1,27 @@
 {% extends "base.html" %}
-{% block title %}OTP Doğrulama{% endblock %}
+{% block title %}OTP Dogrulama{% endblock %}
 {% block content %}
 <div class="auth-card">
-    <h1>OTP Doğrulama</h1>
-    <p class="subtitle">Telefonunuza gönderilen 6 haneli kodu girin</p>
-    <form method="POST">
-        <div class="form-group">
-            <label>Doğrulama Kodu</label>
-            <input type="text" name="otp" class="otp-input" maxlength="6" placeholder="000000" required autofocus autocomplete="one-time-code">
+    <div class="auth-header">
+        <div class="auth-icon" style="background:rgba(34,197,94,0.1); border-color:rgba(34,197,94,0.2);">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="M6 8h.01M10 8h.01M14 8h.01M18 8h.01M8 12h.01M12 12h.01M16 12h.01M6 16h.01M10 16h.01M14 16h8"/></svg>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%">Doğrula</button>
+        <h1>OTP Dogrulama</h1>
+        <p>Telefonunuza gonderilen 6 haneli kodu girin</p>
+    </div>
+    <form method="POST" novalidate>
+        <div class="form-group">
+            <label for="otp" class="form-label">Dogrulama Kodu</label>
+            <input type="text" id="otp" name="otp" class="form-input otp-input" maxlength="6" placeholder="------" required autofocus autocomplete="one-time-code" inputmode="numeric" pattern="[0-9]*">
+            <p class="form-hint" style="text-align:center; margin-top:8px;">Kod 5 dakika icerisinde gecerlidir</p>
+        </div>
+        <button type="submit" class="btn btn-success btn-full">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+            Dogrula
+        </button>
     </form>
-    <div class="alt-link">
-        <a href="{{ url_for('login_page') }}">Geri dön</a>
+    <div class="auth-footer">
+        <a href="{{ url_for('login_page') }}">Girişe geri don</a>
     </div>
 </div>
 {% endblock %}

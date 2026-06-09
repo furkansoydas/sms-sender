@@ -2,85 +2,98 @@
 {% block title %}Dashboard - SMS Sender{% endblock %}
 {% block content %}
 
-<h1 style="font-size:1.5rem; margin-bottom:1.5rem;">Dashboard</h1>
+<h1 class="page-title">Dashboard</h1>
 
 <div class="stats-grid">
-    <div class="stat-card blue">
-        <div class="number">{{ total }}</div>
-        <div class="label">Toplam Kayıt</div>
+    <div class="stat-card">
+        <div class="stat-value blue">{{ total }}</div>
+        <div class="stat-label">Toplam Kayit</div>
     </div>
-    <div class="stat-card green">
-        <div class="number">{{ sendable }}</div>
-        <div class="label">Gönderilebilir</div>
+    <div class="stat-card">
+        <div class="stat-value green">{{ sendable }}</div>
+        <div class="stat-label">Gonderilebilir</div>
     </div>
-    <div class="stat-card purple">
-        <div class="number">{{ unique_phones }}</div>
-        <div class="label">Benzersiz Numara</div>
+    <div class="stat-card">
+        <div class="stat-value purple">{{ unique_phones }}</div>
+        <div class="stat-label">Benzersiz Numara</div>
     </div>
-    <div class="stat-card red">
-        <div class="number">{{ blacklisted_count }}</div>
-        <div class="label">Kara Liste</div>
+    <div class="stat-card">
+        <div class="stat-value red">{{ blacklisted_count }}</div>
+        <div class="stat-label">Kara Liste</div>
     </div>
-    <div class="stat-card yellow">
-        <div class="number">{{ invalid }}</div>
-        <div class="label">Geçersiz Numara</div>
+    <div class="stat-card">
+        <div class="stat-value yellow">{{ invalid }}</div>
+        <div class="stat-label">Gecersiz Numara</div>
     </div>
 </div>
 
 {% if blacklisted_count > 0 %}
-<div class="blacklist-banner">
-    <h3>Kara Liste Koruması Aktif</h3>
-    <p>Excel'de kırmızı işaretlenmiş <strong>{{ blacklisted_count }} kişi</strong> SMS almak istemiyor. Bu kişilere SMS gönderimi otomatik olarak engelleniyor. Yanlışlıkla bile bu kişilere mesaj atamazsınız.</p>
+<div class="alert alert-danger">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+    <div>
+        <strong>Kara Liste Korumasi Aktif</strong><br>
+        Excel'de kirmizi isaretlenmis <strong>{{ blacklisted_count }} kisi</strong> SMS almak istemiyor. Bu kisilere gonderim otomatik olarak engellenmistir. Yanlislikla bile mesaj atamazsiniz.
+    </div>
 </div>
 {% endif %}
 
-<div class="card">
-    <h2>Sheet Dağılımı</h2>
+<div class="card mb-md">
+    <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Sheet Dagilimi
+    </div>
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
                 <th>Sheet</th>
-                <th>Gönderilebilir</th>
-                <th>İşlem</th>
+                <th>Gonderilebilir</th>
+                <th style="text-align:right">Islem</th>
             </tr>
         </thead>
         <tbody>
             {% for sheet, count in sheets.items() %}
             <tr>
                 <td><strong>{{ sheet }}</strong></td>
-                <td>{{ count }} kişi</td>
-                <td>
-                    <a href="{{ url_for('contacts_page', sheet=sheet) }}" class="btn btn-ghost" style="padding:0.3rem 0.8rem; font-size:0.8rem;">Görüntüle</a>
+                <td><span class="text-mono">{{ count }}</span> kisi</td>
+                <td style="text-align:right">
+                    <a href="{{ url_for('contacts_page', sheet=sheet) }}" class="btn btn-ghost" style="padding:5px 14px; font-size:0.75rem;">Goruntule</a>
                 </td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 
 {% if blacklisted %}
-<div class="card">
-    <h2 style="color:#f87171;">Kara Liste (SMS İstemeyen)</h2>
+<div class="card" style="border-color: rgba(239,68,68,0.2);">
+    <div class="card-title" style="color: var(--danger);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+        Kara Liste (SMS Istemeyen)
+    </div>
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
                 <th>Firma</th>
                 <th>Telefon</th>
                 <th>Sheet</th>
-                <th>Durum</th>
+                <th style="text-align:right">Durum</th>
             </tr>
         </thead>
         <tbody>
             {% for c in blacklisted %}
-            <tr class="blacklisted">
-                <td>{{ c.firma }}</td>
-                <td>{{ c.telefon }}</td>
+            <tr class="row-danger">
+                <td><strong>{{ c.firma }}</strong></td>
+                <td class="text-mono">{{ c.telefon }}</td>
                 <td>{{ c.sheet }}</td>
-                <td><span class="badge badge-red">ENGEL</span></td>
+                <td style="text-align:right"><span class="badge badge-danger">ENGEL</span></td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
 </div>
 {% endif %}
 

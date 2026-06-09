@@ -1,56 +1,73 @@
 {% extends "base.html" %}
-{% block title %}SMS Önizleme{% endblock %}
+{% block title %}SMS Onizleme{% endblock %}
 {% block content %}
 
-<h1 style="font-size:1.5rem; margin-bottom:1.5rem;">SMS Önizleme</h1>
+<h1 class="page-title">Gonderim Onayi</h1>
 
-<div class="card" style="border-color:rgba(234,179,8,0.4);">
-    <h2 style="color:#facc15;">Gönderim Onayı</h2>
-    <div style="background:#0f172a; border-radius:10px; padding:1.25rem; margin-bottom:1.25rem;">
-        <p style="color:#64748b; font-size:0.8rem; margin-bottom:0.5rem;">MESAJ</p>
-        <p style="font-size:1rem; line-height:1.6;">{{ message }}</p>
+<div class="card mb-md" style="border-color: rgba(245,158,11,0.3);">
+    <div class="card-title" style="color: var(--warning);">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+        Gondermeden once kontrol edin
     </div>
-    <div style="display:flex; gap:2rem; margin-bottom:1.5rem;">
-        <div>
-            <p style="color:#64748b; font-size:0.8rem;">ALICI SAYISI</p>
-            <p style="font-size:1.5rem; font-weight:700; color:#4ade80;">{{ count }}</p>
+
+    <div class="preview-box mb-md">
+        <div class="preview-label">Mesaj</div>
+        <p style="font-size:0.95rem; line-height:1.7; color: var(--text-primary);">{{ message }}</p>
+    </div>
+
+    <div class="grid-2">
+        <div class="preview-box">
+            <div class="preview-label">Alici Sayisi</div>
+            <div class="preview-value" style="color: var(--success);">{{ count }}</div>
         </div>
-        <div>
-            <p style="color:#64748b; font-size:0.8rem;">SHEET</p>
-            <p style="font-size:1.5rem; font-weight:700; color:#38bdf8;">{{ sheet if sheet != 'all' else 'Tümü' }}</p>
+        <div class="preview-box">
+            <div class="preview-label">Sheet</div>
+            <div class="preview-value" style="color: var(--accent);">{{ sheet if sheet != 'all' else 'Tumu' }}</div>
         </div>
     </div>
 </div>
 
-<div class="card">
-    <h2>Alıcı Listesi (ilk 50)</h2>
+<div class="card mb-md">
+    <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Alici Listesi
+    </div>
+    <div class="table-wrap">
     <table>
         <thead>
-            <tr><th>#</th><th>Firma</th><th>Telefon</th></tr>
+            <tr>
+                <th style="width:40px">#</th>
+                <th>Firma</th>
+                <th>Telefon</th>
+            </tr>
         </thead>
         <tbody>
             {% for t in targets[:50] %}
             <tr>
-                <td>{{ loop.index }}</td>
-                <td>{{ t.firma }}</td>
-                <td>{{ t.phone }}</td>
+                <td class="text-muted">{{ loop.index }}</td>
+                <td><strong>{{ t.firma }}</strong></td>
+                <td class="text-mono">{{ t.phone }}</td>
             </tr>
             {% endfor %}
         </tbody>
     </table>
+    </div>
     {% if count > 50 %}
-    <p style="color:#64748b; margin-top:1rem; font-size:0.85rem;">... ve {{ count - 50 }} kişi daha</p>
+    <p class="text-muted text-sm mt-md">... ve {{ count - 50 }} kisi daha</p>
     {% endif %}
 </div>
 
-<div style="display:flex; gap:1rem; margin-top:1.5rem;">
+<div class="gap-row">
     <form method="POST" action="{{ url_for('send_page') }}">
         <input type="hidden" name="message" value="{{ message }}">
         <input type="hidden" name="sheet" value="{{ sheet }}">
         <input type="hidden" name="confirmed" value="true">
-        <button type="submit" class="btn btn-success">SMS Gönder ({{ count }} kişi)</button>
+        <button type="submit" class="btn btn-success">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+            SMS Gonder ({{ count }} kisi)
+        </button>
     </form>
-    <a href="{{ url_for('send_page') }}" class="btn btn-ghost">İptal</a>
+    <a href="{{ url_for('send_page') }}" class="btn btn-ghost">Iptal</a>
 </div>
 
 {% endblock %}

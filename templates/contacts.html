@@ -2,50 +2,53 @@
 {% block title %}Rehber - SMS Sender{% endblock %}
 {% block content %}
 
-<h1 style="font-size:1.5rem; margin-bottom:1rem;">Rehber</h1>
+<h1 class="page-title">Rehber</h1>
 
 <div class="filter-bar">
-    <a href="{{ url_for('contacts_page', sheet=current_sheet, show='sendable') }}" class="filter-btn {{ 'active' if show == 'sendable' }}">Gönderilebilir</a>
-    <a href="{{ url_for('contacts_page', sheet=current_sheet, show='blacklisted') }}" class="filter-btn {{ 'active-red' if show == 'blacklisted' }}">Kara Liste</a>
-    <a href="{{ url_for('contacts_page', sheet=current_sheet, show='invalid') }}" class="filter-btn {{ 'active' if show == 'invalid' }}">Geçersiz</a>
-    <span style="color:#334155; margin:0 0.5rem;">|</span>
-    <a href="{{ url_for('contacts_page', sheet='all', show=show) }}" class="filter-btn {{ 'active' if current_sheet == 'all' }}">Tüm Sheet'ler</a>
+    <a href="{{ url_for('contacts_page', sheet=current_sheet, show='sendable') }}" class="filter-btn {{ 'active' if show == 'sendable' }}">Gonderilebilir</a>
+    <a href="{{ url_for('contacts_page', sheet=current_sheet, show='blacklisted') }}" class="filter-btn {{ 'active-danger' if show == 'blacklisted' }}">Kara Liste</a>
+    <a href="{{ url_for('contacts_page', sheet=current_sheet, show='invalid') }}" class="filter-btn {{ 'active' if show == 'invalid' }}">Gecersiz</a>
+    <div class="filter-divider"></div>
+    <a href="{{ url_for('contacts_page', sheet='all', show=show) }}" class="filter-btn {{ 'active' if current_sheet == 'all' }}">Tum Sheet'ler</a>
     {% for s in sheets %}
     <a href="{{ url_for('contacts_page', sheet=s, show=show) }}" class="filter-btn {{ 'active' if current_sheet == s }}">{{ s }}</a>
     {% endfor %}
 </div>
 
 <div class="card">
-    <p style="color:#64748b; font-size:0.85rem; margin-bottom:1rem;">{{ contacts|length }} kayıt gösteriliyor</p>
-    <div style="overflow-x:auto;">
+    <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        <span>{{ contacts|length }} kayit gosteriliyor</span>
+    </div>
+    <div class="table-wrap">
     <table>
         <thead>
             <tr>
-                <th>#</th>
+                <th style="width:40px">#</th>
                 <th>Firma</th>
                 <th>Telefon</th>
                 <th>Departman</th>
                 <th>Lokasyon</th>
                 <th>Sheet</th>
-                <th>Durum</th>
+                <th style="text-align:right">Durum</th>
             </tr>
         </thead>
         <tbody>
             {% for c in contacts[:500] %}
-            <tr class="{{ 'blacklisted' if c.is_blacklisted }}">
-                <td>{{ loop.index }}</td>
+            <tr class="{{ 'row-danger' if c.is_blacklisted }}">
+                <td class="text-muted">{{ loop.index }}</td>
                 <td><strong>{{ c.firma }}</strong></td>
-                <td>{{ c.telefon }}</td>
+                <td class="text-mono">{{ c.telefon }}</td>
                 <td>{{ c.departman or '-' }}</td>
                 <td>{{ c.lokasyon or '-' }}</td>
-                <td><span class="badge badge-blue">{{ c.sheet }}</span></td>
-                <td>
+                <td><span class="badge badge-info">{{ c.sheet }}</span></td>
+                <td style="text-align:right">
                     {% if c.is_blacklisted %}
-                        <span class="badge badge-red">ENGEL</span>
+                        <span class="badge badge-danger">ENGEL</span>
                     {% elif c.is_valid_phone %}
-                        <span class="badge badge-green">OK</span>
+                        <span class="badge badge-success">OK</span>
                     {% else %}
-                        <span class="badge" style="background:rgba(234,179,8,0.2);color:#fde047;">GEÇERSİZ</span>
+                        <span class="badge badge-warning">GECERSIZ</span>
                     {% endif %}
                 </td>
             </tr>
@@ -54,7 +57,7 @@
     </table>
     </div>
     {% if contacts|length > 500 %}
-    <p style="color:#64748b; margin-top:1rem; font-size:0.85rem;">İlk 500 kayıt gösteriliyor. Toplam: {{ contacts|length }}</p>
+    <p class="text-muted text-sm mt-md">Ilk 500 kayit gosteriliyor. Toplam: {{ contacts|length }}</p>
     {% endif %}
 </div>
 

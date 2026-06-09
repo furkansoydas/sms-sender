@@ -1,26 +1,35 @@
 {% extends "base.html" %}
-{% block title %}Kayıt - SMS Sender{% endblock %}
+{% block title %}Kayit - SMS Sender{% endblock %}
 {% block content %}
 <div class="auth-card">
-    <h1>Kayıt Ol</h1>
-    <p class="subtitle">OTP doğrulaması için telefon numaranız gerekli</p>
-    <form method="POST">
+    <div class="auth-header">
+        <div class="auth-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+        </div>
+        <h1>Kayit Ol</h1>
+        <p>OTP dogrulamasi icin telefon gerekli</p>
+    </div>
+    <form method="POST" novalidate>
         <div class="form-group">
-            <label>Kullanıcı Adı</label>
-            <input type="text" name="username" placeholder="kullanici_adi" required autofocus>
+            <label for="username" class="form-label">Kullanici Adi</label>
+            <input type="text" id="username" name="username" class="form-input" placeholder="ornek: admin" required autofocus autocomplete="username">
         </div>
         <div class="form-group">
-            <label>Şifre</label>
-            <input type="password" name="password" placeholder="••••••••" required>
+            <label for="password" class="form-label">Sifre</label>
+            <input type="password" id="password" name="password" class="form-input" placeholder="En az 6 karakter" required autocomplete="new-password">
         </div>
         <div class="form-group">
-            <label>Telefon (OTP için)</label>
-            <input type="text" name="phone" placeholder="5XXXXXXXXX" required>
+            <label for="phone" class="form-label">Telefon Numarasi</label>
+            <input type="tel" id="phone" name="phone" class="form-input" placeholder="5XX XXX XX XX" required>
+            <p class="form-hint">OTP kodu bu numaraya gonderilecek</p>
         </div>
-        <button type="submit" class="btn btn-primary" style="width:100%">Kayıt Ol</button>
+        <button type="submit" class="btn btn-primary btn-full">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="8.5" cy="7" r="4"/><line x1="20" y1="8" x2="20" y2="14"/><line x1="23" y1="11" x2="17" y2="11"/></svg>
+            Kayit Ol
+        </button>
     </form>
-    <div class="alt-link">
-        Hesabınız var mı? <a href="{{ url_for('login_page') }}">Giriş yap</a>
+    <div class="auth-footer">
+        Hesabiniz var mi? <a href="{{ url_for('login_page') }}">Giris yap</a>
     </div>
 </div>
 {% endblock %}

@@ -1,33 +1,42 @@
 {% extends "base.html" %}
-{% block title %}SMS Gönder{% endblock %}
+{% block title %}SMS Gonder{% endblock %}
 {% block content %}
 
-<h1 style="font-size:1.5rem; margin-bottom:1.5rem;">SMS Gönder</h1>
+<h1 class="page-title">SMS Gonder</h1>
 
-<div class="blacklist-banner">
-    <h3>Kara listedeki kişilere SMS gönderilmez</h3>
-    <p>Excel'de kırmızı işaretli kişiler otomatik olarak gönderim listesinden çıkarılmıştır. Aşağıda sadece izin verilen kişiler yer alır.</p>
+<div class="alert alert-danger">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+    <div>
+        <strong>Kara listedeki kisilere SMS gonderilmez</strong><br>
+        Excel'de kirmizi isaretli kisiler otomatik olarak gonderim listesinden cikarilmistir. Asagida sadece izin verilen kisiler yer alir.
+    </div>
 </div>
 
 <div class="card">
-    <h2>Yeni SMS Gönderimi</h2>
-    <form method="POST">
+    <div class="card-title">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
+        Yeni SMS Gonderimi
+    </div>
+    <form method="POST" novalidate>
         <div class="form-group">
-            <label>Hedef Sheet</label>
-            <select name="sheet">
-                <option value="all">Tümü ({{ sendable_count }} kişi)</option>
+            <label for="sheet" class="form-label">Hedef Sheet</label>
+            <select id="sheet" name="sheet" class="form-input">
+                <option value="all">Tumu ({{ sendable_count }} kisi)</option>
                 {% for s in sheets %}
                 <option value="{{ s }}">{{ s }}</option>
                 {% endfor %}
             </select>
         </div>
         <div class="form-group">
-            <label>SMS Mesajı</label>
-            <textarea name="message" placeholder="Mesajınızı buraya yazın..." required></textarea>
-            <p style="color:#64748b; font-size:0.75rem; margin-top:0.5rem;">Türkçe karakter kullanırsanız SMS uzunluğu 70 karaktere düşer. Uzun mesajlar birden fazla SMS olarak ücretlendirilir.</p>
+            <label for="message" class="form-label">SMS Mesaji</label>
+            <textarea id="message" name="message" class="form-input" placeholder="Mesajinizi buraya yazin..." required></textarea>
+            <p class="form-hint">Turkce karakter kullanirsaniz SMS uzunlugu 70 karaktere duser. Uzun mesajlar birden fazla SMS olarak ucretlendirilir.</p>
         </div>
         <input type="hidden" name="confirmed" value="false">
-        <button type="submit" class="btn btn-primary">Önizleme</button>
+        <button type="submit" class="btn btn-primary">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+            Onizleme
+        </button>
     </form>
 </div>
 
