@@ -2,7 +2,10 @@ import os
 from werkzeug.utils import secure_filename
 from flask import Flask, render_template, request, redirect, url_for, session, flash, jsonify
 from dotenv import load_dotenv
-from auth import register, login, generate_otp, send_otp_sms, verify_otp
+from auth import (
+    register, login,
+    ensure_admin, list_users, get_user, set_active, delete_user,
+)
 from excel_reader import read_excel
 from sms_sender import VerimorSMS
 from database import (
@@ -18,6 +21,12 @@ init_db()
 
 app = Flask(__name__)
 app.secret_key = os.getenv("SECRET_KEY", "sms-sender-secret-key-change-me")
+
+# Tek yönetici hesabını .env'deki ADMIN_PASSWORD ile garanti et
+ensure_admin(
+    os.getenv("ADMIN_PASSWORD", "admin"),
+    os.getenv("ADMIN_PHONE", ""),
+)
 
 UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
@@ -59,6 +68,19 @@ def login_required(f):
     return decorated
 
 
+def admin_required(f):
+    from functools import wraps
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        if "user" not in session:
+            return redirect(url_for("login_page"))
+        if session.get("role") != "admin":
+            flash("Bu sayfaya yalnızca yönetici erişebilir.", "error")
+            return redirect(url_for("dashboard"))
+        return f(*args, **kwargs)
+    return decorated
+
+
 # ── Auth Routes ──
 
 @app.route("/")
@@ -75,72 +97,72 @@ def login_page():
         password = request.form.get("password", "").strip()
 
         if not login(username, password):
-            log_action(username, "login_failed", f"Hatalı şifre denemesi", ip=request.remote_addr, status="error")
-            flash("Kullanıcı adı veya şifre hatalı.", "error")
+            log_action(username, "login_failed", f"Hatalı şifre veya kapalı hesap", ip=request.remote_addr, status="error")
+            flash("Kullanıcı adı veya şifre hatalı ya da hesap erişimi kapalı.", "error")
             return redirect(url_for("login_page"))
 
-        # Skip OTP if Verimor not configured (dev mode)
-        sms_client = get_sms_client()
-        if not sms_client:
-            session["user"] = username
-            log_action(username, "login_success", "OTP atlandı (dev mode)", ip=request.remote_addr)
-            flash(f"Hoş geldin, {username}!", "success")
-            return redirect(url_for("dashboard"))
-
-        otp = generate_otp(username)
-        from auth import _load_users
-        user_phone = _load_users()[username]["phone"]
-        send_otp_sms(user_phone, otp, sms_client)
-
-        session["pending_user"] = username
-        return redirect(url_for("otp_page"))
+        user = get_user(username)
+        session["user"] = username
+        session["role"] = user.get("role", "user")
+        log_action(username, "login_success", "Giriş yapıldı", ip=request.remote_addr)
+        flash(f"Hoş geldin, {username}!", "success")
+        return redirect(url_for("dashboard"))
 
     return render_template("login.html")
 
 
-@app.route("/register", methods=["GET", "POST"])
-def register_page():
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "").strip()
-        phone = request.form.get("phone", "").strip()
+# ── Admin: Kullanıcı Yönetimi ──
 
-        if not username or not password or not phone:
-            flash("Tüm alanları doldurun.", "error")
-            return redirect(url_for("register_page"))
-
-        if register(username, password, phone):
-            log_action(username, "register", f"Yeni kullanıcı kaydı (tel: {phone})", ip=request.remote_addr)
-            flash("Kayıt başarılı! Giriş yapabilirsiniz.", "success")
-            return redirect(url_for("login_page"))
-        else:
-            flash("Bu kullanıcı adı zaten kayıtlı.", "error")
-            return redirect(url_for("register_page"))
-
-    return render_template("register.html")
+@app.route("/users")
+@admin_required
+def users_page():
+    return render_template("users.html", users=list_users())
 
 
-@app.route("/otp", methods=["GET", "POST"])
-def otp_page():
-    if "pending_user" not in session:
-        return redirect(url_for("login_page"))
+@app.route("/users/add", methods=["POST"])
+@admin_required
+def users_add():
+    username = request.form.get("username", "").strip()
+    password = request.form.get("password", "").strip()
+    phone = request.form.get("phone", "").strip()
 
-    if request.method == "POST":
-        otp_input = request.form.get("otp", "").strip()
-        username = session["pending_user"]
+    if not username or not password:
+        flash("Kullanıcı adı ve şifre zorunlu.", "error")
+        return redirect(url_for("users_page"))
 
-        if verify_otp(username, otp_input):
-            session.pop("pending_user", None)
-            session["user"] = username
-            log_action(username, "login_success", "OTP doğrulandı", ip=request.remote_addr)
-            flash(f"Hoş geldin, {username}!", "success")
-            return redirect(url_for("dashboard"))
-        else:
-            log_action(username, "otp_failed", "Hatalı OTP kodu", ip=request.remote_addr, status="error")
-            flash("OTP kodu hatalı veya süresi dolmuş.", "error")
-            return redirect(url_for("otp_page"))
+    if register(username, password, phone, role="user", active=True):
+        log_action(session["user"], "user_add", f"Kullanıcı eklendi: {username}", ip=request.remote_addr)
+        flash(f"Kullanıcı eklendi: {username}", "success")
+    else:
+        flash("Bu kullanıcı adı zaten kayıtlı.", "error")
+    return redirect(url_for("users_page"))
 
-    return render_template("otp.html")
+
+@app.route("/users/toggle/<username>", methods=["POST"])
+@admin_required
+def users_toggle(username):
+    user = get_user(username)
+    if not user:
+        flash("Kullanıcı bulunamadı.", "error")
+        return redirect(url_for("users_page"))
+    new_state = not user.get("active", True)
+    if set_active(username, new_state):
+        log_action(session["user"], "user_toggle", f"{username} erişimi {'açıldı' if new_state else 'kapatıldı'}", ip=request.remote_addr)
+        flash(f"{username} erişimi {'açıldı' if new_state else 'kapatıldı'}.", "success")
+    else:
+        flash("Admin hesabının erişimi değiştirilemez.", "error")
+    return redirect(url_for("users_page"))
+
+
+@app.route("/users/delete/<username>", methods=["POST"])
+@admin_required
+def users_delete(username):
+    if delete_user(username):
+        log_action(session["user"], "user_delete", f"Kullanıcı silindi: {username}", ip=request.remote_addr)
+        flash(f"Kullanıcı silindi: {username}", "success")
+    else:
+        flash("Bu kullanıcı silinemez.", "error")
+    return redirect(url_for("users_page"))
 
 
 @app.route("/logout")
@@ -557,9 +579,11 @@ def audit_page():
     return render_template("audit.html", logs=logs, user_filter=user_filter, action_filter=action_filter)
 
 
+# Arka plan queue worker'ını başlat (gunicorn ile de çalışsın diye modül seviyesinde)
+start_worker(get_sms_client)
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5050))
-    # Start background queue worker
-    start_worker(get_sms_client)
     print(f"\n  SMS Sender çalışıyor: http://localhost:{port}\n")
     app.run(debug=True, port=port, host="0.0.0.0", use_reloader=False)

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}Kullanicilar - SMS Sender{% endblock %}
+{% block content %}
+
+<div class="page-header">
+    <h1>Kullanicilar</h1>
+    <p>Hesaplari yonet, erisim ver veya kes.</p>
+</div>
+
+<div class="panel" style="margin-bottom:24px;">
+    <div class="panel-header">
+        <div class="panel-title">Yeni Kullanici Ekle</div>
+    </div>
+    <div class="panel-body">
+        <form method="POST" action="{{ url_for('users_add') }}">
+            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr auto; gap:16px; align-items:end;">
+                <div class="field" style="margin-bottom:0">
+                    <label for="u-username">Kullanici Adi</label>
+                    <input type="text" id="u-username" name="username" class="input" placeholder="kullanici_adi" required>
+                </div>
+                <div class="field" style="margin-bottom:0">
+                    <label for="u-password">Sifre</label>
+                    <input type="text" id="u-password" name="password" class="input" placeholder="sifre" required>
+                </div>
+                <div class="field" style="margin-bottom:0">
+                    <label for="u-phone">Telefon (opsiyonel)</label>
+                    <input type="text" id="u-phone" name="phone" class="input" placeholder="5xxxxxxxxx">
+                </div>
+                <button type="submit" class="btn btn-accent">Ekle</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="panel-header">
+        <div class="panel-title">Tum Kullanicilar ({{ users|length }})</div>
+    </div>
+    <div class="panel-body flush">
+        <table>
+            <thead>
+                <tr>
+                    <th>Kullanici</th>
+                    <th>Telefon</th>
+                    <th>Rol</th>
+                    <th>Durum</th>
+                    <th style="text-align:right">Islem</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for u in users %}
+                <tr>
+                    <td><strong>{{ u.username }}</strong></td>
+                    <td class="mono">{{ u.phone or "—" }}</td>
+                    <td>
+                        {% if u.role == 'admin' %}
+                        <span class="badge badge-blue">admin</span>
+                        {% else %}
+                        <span class="badge badge-green">kullanici</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if u.active %}
+                        <span class="badge badge-green">aktif</span>
+                        {% else %}
+                        <span class="badge badge-red">kapali</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align:right">
+                        {% if u.role != 'admin' %}
+                        <div style="display:inline-flex; gap:8px;">
+                            <form method="POST" action="{{ url_for('users_toggle', username=u.username) }}" style="display:inline">
+                                {% if u.active %}
+                                <button type="submit" class="btn btn-ghost" style="padding:6px 14px; font-size:0.8rem">Erisimi Kes</button>
+                                {% else %}
+                                <button type="submit" class="btn btn-green" style="padding:6px 14px; font-size:0.8rem">Erisim Ver</button>
+                                {% endif %}
+                            </form>
+                            <form method="POST" action="{{ url_for('users_delete', username=u.username) }}" style="display:inline"
+                                  onsubmit="return confirm('{{ u.username }} kullanicisi silinsin mi?');">
+                                <button type="submit" class="btn btn-ghost" style="padding:6px 14px; font-size:0.8rem; color:var(--red); border-color:var(--red-glow);">Sil</button>
+                            </form>
+                        </div>
+                        {% else %}
+                        <span style="color:var(--text-3); font-size:0.8rem">—</span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+{% endblock %}

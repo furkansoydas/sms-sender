@@ -1,0 +1,18 @@
+services:
+  sms-sender:
+    build: .
+    image: sms-sender
+    container_name: sms-sender
+    restart: unless-stopped
+    # Tek worker: arka plan SMS queue işçisinin çift çalışıp aynı SMS'i
+    # iki kez göndermesini önler (düşük trafikli iç araç için yeterli).
+    command: ["gunicorn", "--bind", "0.0.0.0:5050", "--workers", "1", "--timeout", "120", "app:app"]
+    env_file:
+      - .env
+    ports:
+      # Sadece localhost'a aç; dışarıya nginx reverse proxy ile çıkacak
+      - "127.0.0.1:3003:5050"
+    volumes:
+      # Tüm repo host'a mount: kod + .env + users.json + uploads/ kalıcı kalsın,
+      # değişiklik için yeniden build gerekmesin
+      - ./:/app

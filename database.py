@@ -78,6 +78,21 @@ def init_db():
         """)
         db.commit()
 
+    # Stale recovery: önceki çalışmada yarıda kalan (container restart vb.)
+    # 'processing' durumundaki job'ları tekrar 'queued'a al ki worker bunları
+    # bir daha işleyebilsin. Aksi halde sonsuza dek takılı kalırlar.
+    requeue_stale_jobs()
+
+
+def requeue_stale_jobs():
+    """'processing'de takılı kalmış queue job'larını tekrar 'queued' yapar."""
+    with get_db() as db:
+        cur = db.execute(
+            "UPDATE sms_queue SET status = 'queued' WHERE status = 'processing'"
+        )
+        db.commit()
+        return cur.rowcount
+
 
 @contextmanager
 def get_db():
@@ -192,6 +207,14 @@ def retry_queue_item(queue_id: int):
 
 def create_batch(batch_uid: str, username: str, message: str, recipients: int, send_type: str = "bulk") -> int:
     with get_db() as db:
+        # Retry durumunda aynı batch_uid yeniden gelebilir; varsa eski batch'i
+        # ve sms_log kayıtlarını temizleyip tazeden oluştur (UNIQUE çakışmasını önler).
+        existing = db.execute(
+            "SELECT id FROM sms_batch WHERE batch_uid = ?", (batch_uid,)
+        ).fetchone()
+        if existing:
+            db.execute("DELETE FROM sms_log WHERE batch_id = ?", (existing["id"],))
+            db.execute("DELETE FROM sms_batch WHERE id = ?", (existing["id"],))
         cur = db.execute(
             """INSERT INTO sms_batch (batch_uid, created_at, username, message, total_recipients, send_type, status)
                VALUES (?, ?, ?, ?, ?, ?, 'sending')""",
