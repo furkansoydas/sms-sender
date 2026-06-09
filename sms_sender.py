@@ -26,6 +26,22 @@ class VerimorSMS:
         resp = requests.post(self.API_URL, json=payload, timeout=30)
         return {"phone": contact.formatted_phone, "firma": contact.firma, "status": resp.status_code, "response": resp.text}
 
+    def send_to_phones(self, phones: list[str], message: str) -> dict:
+        """Send SMS to a raw list of phone numbers (already normalized 90XXXXXXXXXX)."""
+        payload = {
+            "username": self.username,
+            "password": self.password,
+            "source_addr": self.source_addr,
+            "messages": [
+                {
+                    "msg": message,
+                    "dest": ",".join(phones),
+                }
+            ],
+        }
+        resp = requests.post(self.API_URL, json=payload, timeout=60)
+        return {"status": resp.status_code, "response": resp.text, "count": len(phones)}
+
     def send_bulk(self, contacts: list[Contact], message: str, dry_run: bool = True) -> list[dict]:
         results = []
         all_phones = []

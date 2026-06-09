@@ -324,6 +324,100 @@ def send_page():
     return render_template("send.html", sheets=sheets, contacts=indexed, sendable_count=len(sendable))
 
 
+# ── Manual SMS ──
+
+def _normalize_phone(raw: str) -> str | None:
+    """Normalize a phone to 90XXXXXXXXXX format. Returns None if invalid."""
+    digits = "".join(ch for ch in raw if ch.isdigit())
+    if not digits:
+        return None
+    # Strip leading zeros / +90 prefix
+    if digits.startswith("90") and len(digits) == 12:
+        pass
+    elif digits.startswith("0") and len(digits) == 11:
+        digits = "90" + digits[1:]
+    elif len(digits) == 10 and digits.startswith("5"):
+        digits = "90" + digits
+    else:
+        return None
+    # Validate Turkish mobile: must be 90 + 5XX + 7 digits = 12 total
+    if len(digits) == 12 and digits.startswith("905"):
+        return digits
+    return None
+
+
+@app.route("/manual", methods=["GET", "POST"])
+@login_required
+def manual_send_page():
+    if request.method == "POST":
+        raw_phones = request.form.get("phones", "").strip()
+        message = request.form.get("message", "").strip()
+
+        if not raw_phones:
+            flash("En az bir telefon numarası girin.", "error")
+            return redirect(url_for("manual_send_page"))
+
+        if not message:
+            flash("Mesaj boş olamaz.", "error")
+            return redirect(url_for("manual_send_page"))
+
+        # Split by newline, comma or semicolon
+        import re
+        candidates = [p.strip() for p in re.split(r"[\n,;]+", raw_phones) if p.strip()]
+
+        valid, invalid = [], []
+        for raw in candidates:
+            norm = _normalize_phone(raw)
+            if norm:
+                valid.append(norm)
+            else:
+                invalid.append(raw)
+
+        # Dedup
+        seen = set()
+        unique = []
+        for p in valid:
+            if p not in seen:
+                seen.add(p)
+                unique.append(p)
+
+        # Check blacklist
+        contacts = get_contacts()
+        blacklist_phones = set()
+        for c in contacts:
+            if c.is_blacklisted:
+                for p in c.valid_phones:
+                    blacklist_phones.add(p)
+
+        blocked = [p for p in unique if p in blacklist_phones]
+        sendable_phones = [p for p in unique if p not in blacklist_phones]
+
+        if not sendable_phones:
+            flash("Geçerli numara bulunamadı veya tümü kara listede.", "error")
+            return redirect(url_for("manual_send_page"))
+
+        sms_client = get_sms_client()
+        if not sms_client:
+            flash("Verimor API ayarları eksik. .env dosyasını kontrol edin.", "error")
+            return redirect(url_for("manual_send_page"))
+
+        result = sms_client.send_to_phones(sendable_phones, message)
+
+        if result["status"] == 200:
+            msg = f"SMS gönderildi: {len(sendable_phones)} numara"
+            if blocked:
+                msg += f" (Kara listedeki {len(blocked)} numara atlandı)"
+            if invalid:
+                msg += f" (Geçersiz {len(invalid)} numara atlandı)"
+            flash(msg, "success")
+        else:
+            flash(f"Gönderim hatası ({result['status']}): {result['response']}", "error")
+
+        return redirect(url_for("manual_send_page"))
+
+    return render_template("manual_send.html")
+
+
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5050))
     print(f"\n  SMS Sender çalışıyor: http://localhost:{port}\n")

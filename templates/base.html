@@ -532,6 +532,10 @@
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
                     SMS Gonder
                 </a>
+                <a href="{{ url_for('manual_send_page') }}" class="sidebar-link {{ 'active' if request.endpoint == 'manual_send_page' }}">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/></svg>
+                    Manuel SMS
+                </a>
             </div>
 
             <div class="sidebar-footer">
