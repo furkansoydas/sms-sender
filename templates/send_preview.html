@@ -11,7 +11,7 @@
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
     <div>
         <strong>Onay Bekliyor</strong> &mdash;
-        Asagidaki bilgileri kontrol edin. "SMS Gonder" butonuna bastiginizda mesajlar gonderilir ve geri alinamaz.
+        "SMS Gonder" butonuna bastiginizda mesajlar gonderilir ve geri alinamaz.
     </div>
 </div>
 
@@ -29,12 +29,12 @@
         </div>
         <div class="grid-2">
             <div class="preview-block">
-                <div class="preview-label">Alici Sayisi</div>
+                <div class="preview-label">Benzersiz Numara</div>
                 <div class="preview-big" style="color:var(--green);">{{ count }}</div>
             </div>
             <div class="preview-block">
-                <div class="preview-label">Hedef Sheet</div>
-                <div class="preview-big" style="color:var(--accent);">{{ sheet if sheet != 'all' else 'Tumu' }}</div>
+                <div class="preview-label">Karakter / SMS</div>
+                <div class="preview-big" style="color:var(--accent);">{{ message|length }} kar.</div>
             </div>
         </div>
     </div>
@@ -47,9 +47,10 @@
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
             Alici Listesi
         </div>
-        <span class="badge badge-green">{{ count }} kisi</span>
+        <span class="badge badge-green">{{ count }} numara</span>
     </div>
     <div class="panel-body flush">
+        <div style="max-height:350px;overflow-y:auto;">
         <table>
             <thead>
                 <tr>
@@ -59,7 +60,7 @@
                 </tr>
             </thead>
             <tbody>
-                {% for t in targets[:50] %}
+                {% for t in targets[:100] %}
                 <tr>
                     <td class="mono text-muted">{{ loop.index }}</td>
                     <td><strong>{{ t.firma }}</strong></td>
@@ -68,9 +69,10 @@
                 {% endfor %}
             </tbody>
         </table>
-        {% if count > 50 %}
+        </div>
+        {% if count > 100 %}
         <div style="padding:14px 18px;border-top:1px solid var(--border);text-align:center;">
-            <span class="text-xs text-2">... ve <strong style="color:var(--text)">{{ count - 50 }}</strong> kisi daha</span>
+            <span class="text-xs text-2">... ve <strong style="color:var(--text)">{{ count - 100 }}</strong> numara daha</span>
         </div>
         {% endif %}
     </div>
@@ -80,14 +82,16 @@
 <div class="gap-row" style="margin-top:8px;">
     <form method="POST" action="{{ url_for('send_page') }}">
         <input type="hidden" name="message" value="{{ message }}">
-        <input type="hidden" name="sheet" value="{{ sheet }}">
         <input type="hidden" name="confirmed" value="true">
+        {% for idx in selected_indices.split(',') %}
+        <input type="hidden" name="selected" value="{{ idx }}">
+        {% endfor %}
         <button type="submit" class="btn btn-green">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M22 2L11 13"/><path d="M22 2L15 22L11 13L2 9L22 2Z"/></svg>
-            SMS Gonder ({{ count }} kisi)
+            SMS Gonder ({{ count }} numara)
         </button>
     </form>
-    <a href="{{ url_for('send_page') }}" class="btn btn-ghost">Iptal</a>
+    <a href="{{ url_for('send_page') }}" class="btn btn-ghost">Geri Don</a>
 </div>
 
 {% endblock %}

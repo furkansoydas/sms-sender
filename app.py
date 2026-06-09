@@ -255,25 +255,46 @@ def send_page():
     sendable = [c for c in contacts if not c.is_blacklisted and c.is_valid_phone]
     sheets = list(set(c.sheet for c in sendable))
 
+    # Build indexed contact list for selection
+    indexed = []
+    for i, c in enumerate(sendable):
+        indexed.append({
+            "idx": i,
+            "firma": c.firma,
+            "telefon": c.telefon,
+            "ilgili_kisi": c.ilgili_kisi or "",
+            "lokasyon": c.lokasyon or "",
+            "sheet": c.sheet,
+            "phones": ", ".join(c.valid_phones),
+            "phone_count": len(c.valid_phones),
+        })
+
     if request.method == "POST":
         message = request.form.get("message", "").strip()
-        selected_sheet = request.form.get("sheet", "all")
         confirmed = request.form.get("confirmed") == "true"
+        selected_indices = request.form.getlist("selected")
 
         if not message:
             flash("Mesaj boş olamaz.", "error")
             return redirect(url_for("send_page"))
 
-        if selected_sheet == "all":
-            targets = sendable
-        else:
-            targets = [c for c in sendable if c.sheet == selected_sheet]
+        if not selected_indices:
+            flash("En az bir alıcı seçmelisiniz.", "error")
+            return redirect(url_for("send_page"))
 
+        # Map indices back to contacts
+        try:
+            sel_set = set(int(x) for x in selected_indices)
+        except ValueError:
+            flash("Geçersiz seçim.", "error")
+            return redirect(url_for("send_page"))
+
+        targets = [sendable[i] for i in sel_set if i < len(sendable)]
         # Double-check: no blacklisted
         targets = [c for c in targets if not c.is_blacklisted]
 
         if not confirmed:
-            # Preview
+            # Preview — dedup phones
             seen = set()
             unique_phones = []
             for c in targets:
@@ -284,9 +305,9 @@ def send_page():
 
             return render_template("send_preview.html",
                 message=message,
-                sheet=selected_sheet,
                 targets=unique_phones,
                 count=len(unique_phones),
+                selected_indices=",".join(selected_indices),
             )
 
         # Actual send
@@ -300,7 +321,7 @@ def send_page():
         flash(f"SMS gönderildi: {success}/{len(results)} başarılı", "success")
         return redirect(url_for("dashboard"))
 
-    return render_template("send.html", sheets=sheets, sendable_count=len(sendable))
+    return render_template("send.html", sheets=sheets, contacts=indexed, sendable_count=len(sendable))
 
 
 if __name__ == "__main__":
